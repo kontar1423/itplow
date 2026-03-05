@@ -23,18 +23,18 @@
 ### Missions
 
 - `POST /api/projects/:project_id/missions` — создание миссии.
-- `PUT|PATCH /api/projects/:project_id/missions` — частичное/полное обновление миссии. Токен обязателен(или role `admin`).
-- `DELETE /api/projects/:project_id/missions` — удалить миссию. Токен обязателен(или role `admin`).
+- `PUT|PATCH /api/projects/:project_id/missions/:mission_id` — частичное/полное обновление миссии. Токен обязателен(или role `admin`).
+- `DELETE /api/projects/:project_id/missions/:mission_id` — удалить миссию. Токен обязателен(или role `admin`).
 - `GET /api/projects/:project_id/missions` — Миссии определённого проекта.
 - `GET /api/projects/:project_id/missions/:mission_id` — Миссия одного проекта.
 
 ### Observations
 
 - `POST /api/projects/:project_id/missions/:missions_id/observations` — создание наблюдения.
-- `PUT|PATCH /api/projects/:project_id/missions/:missions_id/observations` — частичное/полное обновление наблюдения. Токен обязателен(или role `admin`).
-- `DELETE /api/projects/:project_id/missions/:missions_id/observations` — удалить наблюдение. Токен обязателен(role `admin` или владелец данного project).
+- `PUT|PATCH /api/projects/:project_id/missions/:missions_id/observations/:obs_id` — частичное/полное обновление наблюдения. Токен обязателен(или role `admin`).
+- `DELETE /api/projects/:project_id/missions/:missions_id/observations/:obs_id` — удалить наблюдение. Токен обязателен(role `admin` или владелец данного project).
 - `GET /api/projects/:project_id/missions/:missions_id/observations` — Наблюдения определённой миссии.
-- `GET /api/projects/:project_id/missions/:missions_id/observations` — Наблюдение одной миссии.
+- `GET /api/projects/:project_id/missions/:missions_id/observations/:obs_id` — Наблюдение одной миссии.
 
 ## Participations (`/api/participations`)
 
