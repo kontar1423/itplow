@@ -4,6 +4,7 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
+actix-cors = "0.7.1"
 actix-web.workspace = true
 bytes.workspace = true
 chrono.workspace = true

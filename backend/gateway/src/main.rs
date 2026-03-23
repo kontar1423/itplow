@@ -4,6 +4,7 @@ mod errors;
 use std::io;
 
 use ::redis::{AsyncCommands, Client};
+use actix_cors::Cors;
 use actix_web::{
     App, HttpRequest, HttpResponse, HttpServer,
     http::{Method, StatusCode, header},
@@ -61,8 +62,16 @@ async fn main() -> io::Result<()> {
     );
 
     HttpServer::new(move || {
+        let cors = Cors::default()
+            .allowed_origin(&config.cors_allowed_origin)
+            .allowed_methods(["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"])
+            .allowed_headers([header::AUTHORIZATION, header::CONTENT_TYPE])
+            .supports_credentials()
+            .max_age(3600);
+
         App::new()
             .wrap(Logger::default())
+            .wrap(cors)
             .app_data(state.clone())
             .route("/health", web::get().to(health))
             .default_service(web::to(proxy))
