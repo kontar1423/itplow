@@ -1,0 +1,124 @@
+@import "tailwindcss";
+
+:root {
+  /* Основные цвета - зелено-синяя гамма */
+  --primary: #0d9488;        /* Teal 600 - основной зелёный */
+  --primary-hover: #0f766e;  /* Teal 700 */
+  --primary-light: #ccfbf1;  /* Teal 100 */
+  --primary-dark: #134e4a;   /* Teal 900 */
+  
+  --secondary: #0ea5e9;      /* Sky 500 - синий акцент */
+  --secondary-hover: #0284c7; /* Sky 600 */
+  --secondary-light: #e0f2fe; /* Sky 100 */
+  
+  --accent: #22d3ee;         /* Cyan 400 - яркий акцент */
+  
+  --success: #10b981;        /* Emerald 500 */
+  --warning: #f59e0b;        /* Amber 500 */
+  --error: #ef4444;         /* Red 500 */
+  
+  /* Нейтральные цвета - лёгкий зеленоватый фон */
+  --background: #f0fdf4;     /* Green 50 */
+  --foreground: #0f172a;     /* Slate 900 */
+  --foreground-muted: #64748b; /* Slate 500 */
+  
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  
+  --border: #d1fae5;         /* Green 100 */
+  --border-hover: #a7f3d0;    /* Green 200 */
+  
+  --muted: #ecfdf5;          /* Green 50 */
+  --muted-foreground: #64748b;
+  
+  --radius: 0.5rem;
+}
+
+@theme inline {
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-light: var(--primary-light);
+  --color-primary-dark: var(--primary-dark);
+  
+  --color-secondary: var(--secondary);
+  --color-secondary-hover: var(--secondary-hover);
+  --color-secondary-light: var(--secondary-light);
+  
+  --color-accent: var(--accent);
+  
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+  
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-foreground-muted: var(--foreground-muted);
+  
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  
+  --color-border: var(--border);
+  --color-border-hover: var(--border-hover);
+  
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  
+  --radius-sm: calc(var(--radius) - 0.125rem);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 0.25rem);
+  --radius-xl: calc(var(--radius) + 0.5rem);
+  
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* Тёмная тема */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0f172a;
+    --foreground: #f8fafc;
+    --foreground-muted: #94a3b8;
+    
+    --card: #1e293b;
+    --card-foreground: #f8fafc;
+    
+    --border: #334155;
+    --border-hover: #475569;
+    
+    --muted: #1e293b;
+    --muted-foreground: #94a3b8;
+  }
+}
+
+/* Основные стили */
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Контейнер */
+.container-custom {
+  width: 100%;
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 640px) {
+  .container-custom {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container-custom {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
