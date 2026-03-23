@@ -1,0 +1,29 @@
+[workspace]
+members = ["gateway", "user-service", "project-service", "observation-service"]
+resolver = "2"
+
+[workspace.package]
+edition = "2024"
+version = "0.1.0"
+
+[workspace.dependencies]
+actix-multipart = "0.7"
+actix-web = "4"
+aws-config = { version = "1", features = ["behavior-version-latest"] }
+aws-sdk-s3 = "1"
+bcrypt = "0.16"
+bytes = "1"
+chrono = { version = "0.4", features = ["clock", "serde"] }
+dotenvy = "0.15"
+env_logger = "0.11"
+futures-util = "0.3"
+jsonwebtoken = "9"
+log = "0.4"
+redis = { version = "0.32", features = ["tokio-comp"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "stream"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio-rustls", "postgres", "uuid", "chrono", "json", "macros", "migrate"] }
+thiserror = "2"
+tokio = { version = "1", features = ["full"] }
+uuid = { version = "1", features = ["serde", "v4"] }

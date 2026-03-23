@@ -1,43 +1,151 @@
-# Api endpoints documentation
+# itplow backend
 
-## Пользователи (`/api/users`)
+Микросервисный backend для платформы проектов гражданской науки.
 
-- `GET /api/users` — список пользователей.
-- `GET /api/users/:id` — профиль по id
-- `GET /api/users/me` — профиль по access токену. Также получает все свои participations.
-- `GET /api/users/:id/projects` — проекты определённого пользователя.
-- `PUT|PATCH /api/users/me` — частичное/полное обновление текущего пользователя (только поля профиля, без email). Токен обязателен.
-- `POST /api/users` — создание пользователя (роль `admin`, иначе по дефолту `user`). Тело: `email` (обяз.), `password` (обяз., ≥6), `firstname?`, `lastname?`, `role?`, `phone?`, `description?`.
-- `PUT|PATCH /api/users/:id` — обновление пользователя (только `admin`). Принимает те же текстовые поля, включая `bio` (файл сейчас не обрабатывается).
-- `DELETE /api/users/:id` — удалить пользователя (только `admin`).
+## Структура
 
-## Projects (`/api/projects`)
+```text
+backend/
+├── docker-compose.yml
+├── nginx.conf
+├── gateway/
+├── user-service/
+├── project-service/
+└── observation-service/
+```
 
-- `GET /api/projects` — список проектов.
-- `GET /api/projects/:id` — проект по id.
-- `GET /api/projects/by_tags` — проекты с определёнными тэгами. Требует массив `tags`.
-- `PUT|PATCH /api/projects/:id` — частичное/полное обновление проекта. Токен обязателен(или role `admin`).
-- `POST /api/projects` — создание проекта.
-- `DELETE /api/users/:id` — удалить проект. Токен обязателен(или role `admin`).
+## Сервисы
 
-### Missions
+- `gateway` (`:8080`) — единая точка входа, проксирование `/api/*`, проверка сессии в Redis.
+- `user-service` (`:8081`) — регистрация, логин, профиль, participations.
+- `project-service` (`:8082`) — проекты и миссии.
+- `observation-service` (`:8083`) — observations, comments, загрузка файлов в MinIO.
 
-- `POST /api/projects/:id/missions` — создание миссии.
-- `PUT|PATCH /api/projects/:id/missions` — частичное/полное обновление миссии. Токен обязателен(или role `admin`).
-- `DELETE /api/users/:id/missions` — удалить миссию. Токен обязателен(или role `admin`).
-- `GET /api/projects/:id/missions` — Миссии определённого проекта.
-- `GET /api/projects/:id/missions/:id` — Миссия одного проекта.
+## Инфраструктура
 
-### Observations
+`docker-compose.yml` поднимает:
 
-- `POST /api/projects/:id/missions/:id/observations` — создание наблюдения.
-- `PUT|PATCH /api/projects/:id/missions/:id/observations` — частичное/полное обновление наблюдения. Токен обязателен(или role `admin`).
-- `DELETE /api/users/:id/missions:id/observations` — удалить наблюдение. Токен обязателен(role `admin` или владелец данного project).
-- `GET /api/projects/:id/missions/:id/observations` — Наблюдения определённой миссии.
-- `GET /api/projects/:id/missions/:id/observations` — Наблюдение одной миссии.
+- `users-db` — PostgreSQL для `user-service`
+- `projects-db` — PostgreSQL для `project-service`
+- `observations-db` — PostgreSQL для `observation-service`
+- `redis` — общие сессии и pub/sub
+- `minio` — хранение файлов observations
+- `gateway`, `user-service`, `project-service`, `observation-service`
 
-## Participations (`/api/participations`)
+## Конфигурация
 
-- `GET /api/participations/:project_id` — участники проекта.
-- `POST /api/participations/:project_id` — поучаствовать. Требуется токен.
-- `DELETE /api/participations/:project_id/:user_id` — прекратить участвовать. Токен обязателен(или role `admin`).
+У каждого сервиса есть свой `.env.example`:
+
+- [gateway/.env.example](gateway/.env.example)
+- [user-service/.env.example](user-service/.env.example)
+- [project-service/.env.example](project-service/.env.example)
+- [observation-service/.env.example](observation-service/.env.example)
+
+Ключевые переменные:
+
+- `DATABASE_URL` — своя БД у каждого сервиса
+- `REDIS_URL` — общий Redis
+- `JWT_SECRET` — один и тот же секрет у всех сервисов и gateway
+- `PROJECT_SERVICE_URL` — нужен `user-service` для получения проектов пользователя
+- `PROJECT_SERVICE_URL` — также нужен `observation-service` для проверки project/mission-контекста и модерации учёным
+- `MINIO_*` — нужны `observation-service` для хранения файлов
+
+## Запуск
+
+Локальная сборка workspace:
+
+```bash
+cargo check --workspace
+```
+
+Запуск всей инфраструктуры:
+
+```bash
+docker compose up --build
+```
+
+После старта доступны:
+
+- `GET http://localhost:8080/health`
+- `GET http://localhost:8081/health`
+- `GET http://localhost:8082/health`
+- `GET http://localhost:8083/health`
+- `MinIO console: http://localhost:9001`
+
+## Аутентификация
+
+- `POST /api/users` — регистрация
+- `POST /api/auth/login` — логин, выдача JWT
+- `POST /api/auth/logout` — удаление сессии в Redis
+- все непубличные запросы идут с `Authorization: Bearer <token>`
+- публичная регистрация поддерживает только роли `volunteer` и `scientist`
+- `admin` — системная роль, не создаётся через публичную регистрацию
+
+Gateway проверяет наличие `session:{token}` в Redis, а downstream-сервисы дополнительно валидируют тот же токен напрямую.
+
+## Основные маршруты
+
+### user-service
+
+- `POST /users`
+- `POST /auth/login`
+- `POST /auth/logout`
+- `GET /users/me`
+- `PUT /users/me`
+- `GET /users/:id`
+- `GET /users/:id/projects`
+- `GET /participations/:project_id`
+- `POST /participations/:project_id`
+- `DELETE /participations/:project_id/:user_id`
+
+### project-service
+
+- `GET /projects`
+- `GET /projects/by_tags`
+- `GET /projects/:id`
+- `POST /projects` — только `scientist` или `admin`
+- `PUT /projects/:id` — владелец-`scientist` или `admin`
+- `DELETE /projects/:id` — владелец-`scientist` или `admin`
+- `GET /projects/:id/missions`
+- `GET /projects/:id/missions/:mission_id`
+- `POST /projects/:id/missions` — владелец-`scientist` или `admin`
+- `PUT /projects/:id/missions/:mission_id` — владелец-`scientist` или `admin`
+- `DELETE /projects/:id/missions/:mission_id` — владелец-`scientist` или `admin`
+- `GET /internal/users/:user_id/projects`
+
+### observation-service
+
+- `GET /projects/:project_id/missions/:mission_id/observations`
+- `GET /projects/:project_id/missions/:mission_id/observations/:obs_id`
+- `POST /projects/:project_id/missions/:mission_id/observations`
+- `PUT /projects/:project_id/missions/:mission_id/observations/:obs_id`
+- `DELETE /projects/:project_id/missions/:mission_id/observations/:obs_id`
+- `GET /projects/:project_id/missions/:mission_id/observations/:obs_id/comments`
+- `POST /projects/:project_id/missions/:mission_id/observations/:obs_id/comments`
+- `PUT /projects/:project_id/missions/:mission_id/observations/:obs_id/comments/:comment_id`
+- `DELETE /projects/:project_id/missions/:mission_id/observations/:obs_id/comments/:comment_id`
+- `GET /projects/:project_id/missions/:mission_id/observations/:obs_id/files`
+- `POST /projects/:project_id/missions/:mission_id/observations/:obs_id/files`
+
+Observation содержит:
+
+- `title`
+- `description`
+- `place`
+- `status`
+- файлы и комментарии
+
+## Технические детали
+
+- миграции запускаются автоматически при старте каждого сервиса через `sqlx::migrate!`
+- `user-service` публикует `user.created` в Redis pub/sub
+- `project-service` публикует `project.created` и `mission.created`
+- `observation-service` создаёт bucket в MinIO при старте, если его ещё нет
+
+## Проверка
+
+Сейчас проверено:
+
+```bash
+cargo check --workspace
+```

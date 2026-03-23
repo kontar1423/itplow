@@ -1,0 +1,175 @@
+services:
+  users-db:
+    image: postgres:16-alpine
+    container_name: itplow-users-db
+    environment:
+      POSTGRES_DB: users_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - users-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d users_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  projects-db:
+    image: postgres:16-alpine
+    container_name: itplow-projects-db
+    environment:
+      POSTGRES_DB: projects_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5434:5432"
+    volumes:
+      - projects-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d projects_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  observations-db:
+    image: postgres:16-alpine
+    container_name: itplow-observations-db
+    environment:
+      POSTGRES_DB: observations_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5435:5432"
+    volumes:
+      - observations-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d observations_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: itplow-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    container_name: itplow-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+
+  user-service:
+    build:
+      context: .
+      dockerfile: user-service/Dockerfile
+    container_name: itplow-user-service
+    environment:
+      APP_HOST: 0.0.0.0
+      APP_PORT: 8081
+      DATABASE_URL: postgres://postgres:postgres@users-db:5432/users_db
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: dev-secret
+      JWT_TTL_SECONDS: 86400
+      PROJECT_SERVICE_URL: http://project-service:8082
+    depends_on:
+      users-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+
+  project-service:
+    build:
+      context: .
+      dockerfile: project-service/Dockerfile
+    container_name: itplow-project-service
+    environment:
+      APP_HOST: 0.0.0.0
+      APP_PORT: 8082
+      DATABASE_URL: postgres://postgres:postgres@projects-db:5432/projects_db
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: dev-secret
+      JWT_TTL_SECONDS: 86400
+    depends_on:
+      projects-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8082:8082"
+
+  observation-service:
+    build:
+      context: .
+      dockerfile: observation-service/Dockerfile
+    container_name: itplow-observation-service
+    environment:
+      APP_HOST: 0.0.0.0
+      APP_PORT: 8083
+      DATABASE_URL: postgres://postgres:postgres@observations-db:5432/observations_db
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: dev-secret
+      JWT_TTL_SECONDS: 86400
+      PROJECT_SERVICE_URL: http://project-service:8082
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_REGION: us-east-1
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_BUCKET: observations
+    depends_on:
+      observations-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    ports:
+      - "8083:8083"
+
+  gateway:
+    build:
+      context: .
+      dockerfile: gateway/Dockerfile
+    container_name: itplow-gateway
+    environment:
+      APP_HOST: 0.0.0.0
+      APP_PORT: 8080
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: dev-secret
+      USER_SERVICE_URL: http://user-service:8081
+      PROJECT_SERVICE_URL: http://project-service:8082
+      OBSERVATION_SERVICE_URL: http://observation-service:8083
+    depends_on:
+      redis:
+        condition: service_healthy
+      user-service:
+        condition: service_started
+      project-service:
+        condition: service_started
+      observation-service:
+        condition: service_started
+    ports:
+      - "8080:8080"
+
+volumes:
+  users-db-data:
+  projects-db-data:
+  observations-db-data:
+  minio-data:
