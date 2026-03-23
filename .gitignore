@@ -1,0 +1,16 @@
+# Rust build artifacts
+backend/target/
+
+# Environment overrides
+.env
+.env.*
+!.env.example
+
+# Editor/IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
