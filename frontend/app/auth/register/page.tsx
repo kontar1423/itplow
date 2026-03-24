@@ -1,14 +1,14 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Card, { CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/Card';
-import { registerUser, CreateUserDto } from '@/lib/api/client';
+import { registerUser, loginUser, CreateUserDto } from '@/lib/api/client';
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const roleParam = searchParams.get('role');
@@ -25,30 +25,35 @@ export default function RegisterPage() {
     setError('');
     
     const formDataEl = new FormData(e.currentTarget);
-    const name = formDataEl.get('name') as string;
+    const firstName = formDataEl.get('firstName') as string;
+    const lastName = formDataEl.get('lastName') as string;
     const email = formDataEl.get('email') as string;
     const password = formDataEl.get('password') as string;
-    
-    const nameParts = name.trim().split(' ');
-    const firstName = nameParts[0] || '';
-    const lastName = nameParts.slice(1).join(' ') || '';
     
     const userData: CreateUserDto = {
       email,
       password,
       first_name: firstName,
       last_name: lastName,
-      role: formData.role === 'scientist' ? 'admin' : 'user',
+      role: formData.role === 'scientist' ? 'scientist' : 'volunteer',
     };
     
     try {
       const { token, user } = await registerUser(userData);
       
-      localStorage.setItem('auth_token', token);
-      localStorage.setItem('user_role', user.role === 'admin' ? 'scientist' : user.role);
+      const loginResult = token 
+        ? { token, user } 
+        : await loginUser(email, password);
+      
+      localStorage.setItem('auth_token', loginResult.token);
+      localStorage.setItem('user_role', loginResult.user.role === 'admin' ? 'scientist' : loginResult.user.role);
+      localStorage.setItem('user_first_name', firstName);
+      localStorage.setItem('user_last_name', lastName);
       
       setIsLoading(false);
-      window.location.reload();
+      
+      const targetRole = formData.role === 'scientist' ? 'scientist' : 'volunteer';
+      router.push(`/dashboard/${targetRole}`);
     } catch (err) {
       setIsLoading(false);
       setError(err instanceof Error ? err.message : 'Ошибка регистрации');
@@ -74,7 +79,6 @@ export default function RegisterPage() {
                 </div>
               )}
               
-              {/* Выбор роли */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Я хочу участвовать как:</label>
                 <div className="grid grid-cols-2 gap-3">
@@ -113,8 +117,15 @@ export default function RegisterPage() {
               
               <Input
                 label="Имя"
-                name="name"
+                name="firstName"
                 placeholder="Ваше имя"
+                required
+              />
+              
+              <Input
+                label="Фамилия"
+                name="lastName"
+                placeholder="Ваша фамилия"
                 required
               />
               
@@ -131,7 +142,7 @@ export default function RegisterPage() {
                 name="password"
                 type="password"
                 placeholder="Придумайте пароль"
-                helperText="Минимум 8 символов"
+                helperText="Минимум 6 символов"
                 required
               />
               
@@ -160,5 +171,26 @@ export default function RegisterPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#f0fdf4] flex items-center justify-center py-12 px-4">
+        <div className="w-full max-w-md">
+          <Card variant="elevated" className="w-full">
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl">Создать аккаунт</CardTitle>
+            </CardHeader>
+            <CardContent className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    }>
+      <RegisterForm />
+    </Suspense>
   );
 }

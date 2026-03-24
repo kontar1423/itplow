@@ -27,9 +27,14 @@ export default function LoginPage() {
       
       localStorage.setItem('auth_token', token);
       localStorage.setItem('user_role', user.role === 'admin' ? 'scientist' : user.role);
+      localStorage.setItem('user_first_name', user.first_name || '');
+      localStorage.setItem('user_last_name', user.last_name || '');
       
       setIsLoading(false);
-      window.location.reload();
+      
+      // Перенаправление на соответствующий dashboard
+      const targetRole = user.role === 'admin' ? 'scientist' : user.role;
+      router.push(`/dashboard/${targetRole}`);
     } catch (err) {
       setIsLoading(false);
       setError(err instanceof Error ? err.message : 'Ошибка входа');

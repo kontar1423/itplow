@@ -38,8 +38,10 @@ export default function Header() {
   
   const handleLogout = () => {
     localStorage.removeItem('auth_token');
+    localStorage.removeItem('user_role');
+    localStorage.removeItem('user_name');
     setIsLoggedIn(false);
-    window.location.reload();
+    router.push('/');
   };
   
   const isAuthPage = pathname?.startsWith('/auth');

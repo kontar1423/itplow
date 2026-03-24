@@ -21,7 +21,7 @@ function getHeaders(): HeadersInit {
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const error = await response.json().catch(() => ({ message: 'Unknown error' }));
-    throw new Error(error.message || `HTTP error ${response.status}`);
+    throw new Error(error.message || error.error || `HTTP error ${response.status}`);
   }
   return response.json();
 }
@@ -32,7 +32,7 @@ export interface CreateUserDto {
   first_name?: string;
   last_name?: string;
   phone?: string;
-  role?: 'user' | 'admin';
+  role?: 'user' | 'admin' | 'scientist' | 'volunteer';
   description?: string;
 }
 
@@ -402,4 +402,21 @@ export async function leaveProject(projectId: string, userId: string): Promise<v
   if (!response.ok) {
     throw new Error(`HTTP error ${response.status}`);
   }
+}
+
+export async function getUserProjects(): Promise<ProjectResponseDto[]> {
+  // Получаем текущего пользователя с его участиями
+  const user = await getCurrentUser();
+  
+  // Если нет участий, возвращаем пустой массив
+  if (!user.participations || user.participations.length === 0) {
+    return [];
+  }
+  
+  // Получаем все проекты
+  const allProjects = await getProjects();
+  
+  // Фильтруем проекты, в которых участвует пользователь
+  const userProjectIds = user.participations.map(p => p.project_id);
+  return allProjects.filter(project => userProjectIds.includes(project.id));
 }
