@@ -92,6 +92,13 @@ pub async fn create_comment(
     .fetch_one(&state.db)
     .await?;
 
+    log::info!(
+        "comment created: id={}, observation_id={}, author_id={}",
+        row.id,
+        row.observation_id,
+        auth.user_id
+    );
+
     Ok(HttpResponse::Created().json(row))
 }
 
@@ -127,6 +134,13 @@ pub async fn update_comment(
     .fetch_one(&state.db)
     .await?;
 
+    log::info!(
+        "comment updated: id={}, observation_id={}, actor_id={}",
+        comment_id,
+        observation_id,
+        auth.user_id
+    );
+
     Ok(HttpResponse::Ok().json(row))
 }
 
@@ -156,6 +170,13 @@ pub async fn delete_comment(
     if result.rows_affected() == 0 {
         return Err(AppError::NotFound("Comment not found".to_string()));
     }
+
+    log::info!(
+        "comment deleted: id={}, observation_id={}, actor_id={}",
+        comment_id,
+        observation_id,
+        auth.user_id
+    );
 
     Ok(HttpResponse::NoContent().finish())
 }

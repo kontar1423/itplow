@@ -113,6 +113,13 @@ pub async fn upload_file(
     .fetch_one(&state.db)
     .await?;
 
+    log::info!(
+        "file uploaded: id={}, observation_id={}, actor_id={}",
+        row.id,
+        observation_id,
+        auth.user_id
+    );
+
     Ok(HttpResponse::Created().json(to_response(&state.storage, row).await?))
 }
 

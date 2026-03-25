@@ -76,6 +76,12 @@ pub async fn join_project(
     .await
     .map_err(map_constraint_error)?;
 
+    log::info!(
+        "participation created: user_id={}, project_id={}",
+        auth.user_id,
+        project_id
+    );
+
     Ok(HttpResponse::Created().json(row))
 }
 
@@ -105,6 +111,12 @@ pub async fn leave_project(
     if result.rows_affected() == 0 {
         return Err(AppError::NotFound("Participation not found".to_string()));
     }
+
+    log::info!(
+        "participation removed: user_id={}, project_id={}",
+        user_id,
+        project_id
+    );
 
     Ok(HttpResponse::NoContent().finish())
 }

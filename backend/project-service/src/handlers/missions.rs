@@ -95,7 +95,7 @@ pub async fn create_mission(
     .fetch_one(&state.db)
     .await?;
 
-    let _ = publish_event(
+    if let Err(err) = publish_event(
         state.get_ref(),
         "mission.created",
         &MissionCreatedEvent {
@@ -103,7 +103,17 @@ pub async fn create_mission(
             project_id: row.project_id,
         },
     )
-    .await;
+    .await
+    {
+        log::warn!("failed to publish mission.created for {}: {}", row.id, err);
+    }
+
+    log::info!(
+        "mission created: id={}, project_id={}, actor_id={}",
+        row.id,
+        row.project_id,
+        auth.user_id
+    );
 
     Ok(HttpResponse::Created().json(row))
 }
@@ -144,6 +154,13 @@ pub async fn update_mission(
     .fetch_one(&state.db)
     .await?;
 
+    log::info!(
+        "mission updated: id={}, project_id={}, actor_id={}",
+        mission_id,
+        project_id,
+        auth.user_id
+    );
+
     Ok(HttpResponse::Ok().json(row))
 }
 
@@ -164,6 +181,13 @@ pub async fn delete_mission(
     if result.rows_affected() == 0 {
         return Err(AppError::NotFound("Mission not found".to_string()));
     }
+
+    log::info!(
+        "mission deleted: id={}, project_id={}, actor_id={}",
+        mission_id,
+        project_id,
+        auth.user_id
+    );
 
     Ok(HttpResponse::NoContent().finish())
 }

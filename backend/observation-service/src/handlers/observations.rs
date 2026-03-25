@@ -106,6 +106,13 @@ pub async fn create_observation(
     .fetch_one(&state.db)
     .await?;
 
+    log::info!(
+        "observation created: id={}, mission_id={}, author_id={}",
+        row.id,
+        row.mission_id,
+        auth.user_id
+    );
+
     Ok(HttpResponse::Created().json(row))
 }
 
@@ -159,6 +166,13 @@ pub async fn update_observation(
     .fetch_one(&state.db)
     .await?;
 
+    log::info!(
+        "observation updated: id={}, actor_id={}, status_changed={}",
+        observation_id,
+        auth.user_id,
+        payload.status.is_some()
+    );
+
     Ok(HttpResponse::Ok().json(row))
 }
 
@@ -182,6 +196,12 @@ pub async fn delete_observation(
     if result.rows_affected() == 0 {
         return Err(AppError::NotFound("Observation not found".to_string()));
     }
+
+    log::info!(
+        "observation deleted: id={}, actor_id={}",
+        observation_id,
+        auth.user_id
+    );
 
     Ok(HttpResponse::NoContent().finish())
 }

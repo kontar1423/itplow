@@ -116,16 +116,26 @@ pub async fn register(
     .await
     .map_err(map_constraint_error)?;
 
-    let _ = publish_event(
+    if let Err(err) = publish_event(
         state.get_ref(),
         "user.created",
         &UserCreatedEvent {
             id: user.id,
             email: user.email.clone(),
-            role,
+            role: role.clone(),
         },
     )
-    .await;
+    .await
+    {
+        log::warn!("failed to publish user.created for {}: {}", user.id, err);
+    }
+
+    log::info!(
+        "user registered: id={}, email={}, role={}",
+        user.id,
+        user.email,
+        role
+    );
 
     Ok(HttpResponse::Created().json(to_user_response(user)))
 }
@@ -167,6 +177,8 @@ pub async fn login(
 
     store_session(state.get_ref(), &token, &user.id.to_string()).await?;
 
+    log::info!("user logged in: id={}, email={}", user.id, user.email);
+
     Ok(HttpResponse::Ok().json(AuthResponse {
         token,
         user: to_user_response(user),
@@ -178,6 +190,7 @@ pub async fn logout(
     auth: AuthenticatedUser,
 ) -> Result<HttpResponse, AppError> {
     delete_session(state.get_ref(), &auth.token).await?;
+    log::info!("user logged out: id={}", auth.user_id);
     Ok(HttpResponse::Ok().finish())
 }
 
@@ -213,6 +226,8 @@ pub async fn update_me(
     .bind(payload.description.as_deref())
     .fetch_one(&state.db)
     .await?;
+
+    log::info!("profile updated: id={}", auth.user_id);
 
     Ok(HttpResponse::Ok().json(to_user_response(user)))
 }

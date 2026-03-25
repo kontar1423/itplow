@@ -145,7 +145,7 @@ pub async fn create_project(
     .fetch_one(&state.db)
     .await?;
 
-    let _ = publish_event(
+    if let Err(err) = publish_event(
         state.get_ref(),
         "project.created",
         &ProjectCreatedEvent {
@@ -153,7 +153,12 @@ pub async fn create_project(
             user_id: row.user_id,
         },
     )
-    .await;
+    .await
+    {
+        log::warn!("failed to publish project.created for {}: {}", row.id, err);
+    }
+
+    log::info!("project created: id={}, owner_id={}", row.id, row.user_id);
 
     Ok(HttpResponse::Created().json(row))
 }
@@ -189,6 +194,12 @@ pub async fn update_project(
     .fetch_one(&state.db)
     .await?;
 
+    log::info!(
+        "project updated: id={}, actor_id={}",
+        project_id,
+        auth.user_id
+    );
+
     Ok(HttpResponse::Ok().json(row))
 }
 
@@ -207,6 +218,12 @@ pub async fn delete_project(
     if result.rows_affected() == 0 {
         return Err(AppError::NotFound("Project not found".to_string()));
     }
+
+    log::info!(
+        "project deleted: id={}, actor_id={}",
+        project_id,
+        auth.user_id
+    );
 
     Ok(HttpResponse::NoContent().finish())
 }

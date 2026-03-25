@@ -14,6 +14,7 @@ use actix_web::{
 use bytes::Bytes;
 use chrono::Utc;
 use config::Config;
+use env_logger::Env;
 use errors::AppError;
 use jsonwebtoken::{DecodingKey, Validation, decode};
 use serde::{Deserialize, Serialize};
@@ -41,7 +42,9 @@ struct Claims {
 #[actix_web::main]
 async fn main() -> io::Result<()> {
     dotenvy::dotenv().ok();
-    env_logger::init();
+    env_logger::Builder::from_env(Env::default().default_filter_or("info"))
+        .format_timestamp_millis()
+        .init();
 
     let config = Config::from_env().map_err(to_io_error)?;
     let redis = Client::open(config.redis_url.clone())

@@ -11,6 +11,7 @@ use ::redis::Client;
 use actix_web::{App, HttpResponse, HttpServer, middleware::Logger, web};
 use config::Config;
 use db::{create_pool, run_migrations};
+use env_logger::Env;
 use errors::AppError;
 use serde::Serialize;
 use sqlx::PgPool;
@@ -32,7 +33,9 @@ struct HealthResponse {
 #[actix_web::main]
 async fn main() -> io::Result<()> {
     dotenvy::dotenv().ok();
-    env_logger::init();
+    env_logger::Builder::from_env(Env::default().default_filter_or("info"))
+        .format_timestamp_millis()
+        .init();
 
     let config = Config::from_env().map_err(to_io_error)?;
     let db = create_pool(&config.database_url)
