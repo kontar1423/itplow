@@ -1,8 +1,26 @@
+'use client'
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
 import Card, { CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/Card';
+import Footer from '@/components/layout/Footer';
+import CTA from '@/components/layout/CTA';
+import { getCurrentUser, type UserResponseDto } from '@/lib/api/client';
 
 export default function AboutPage() {
+  const [currentUser, setCurrentUser] = useState<UserResponseDto | null>(null);
+  
+    useEffect(() => {
+      const token = localStorage.getItem('auth_token');
+      if (token) {
+        getCurrentUser()
+          .then((user) => setCurrentUser(user))
+          .catch(() => {
+            localStorage.removeItem('auth_token');
+          });
+      }
+    }, []);
+  
   return (
     <div className="min-h-screen">
       {/* Hero */}
@@ -116,7 +134,9 @@ export default function AboutPage() {
           
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             <Card variant="elevated" className="text-center">
-              <div className="text-6xl mb-4">🔬</div>
+              <div className="mb-4 flex justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><path d="M10 2v7.31"/><path d="M14 9.3V1.99"/><path d="M8.5 2h7"/><path d="M14 9.3a6.5 6.5 0 1 1-4 0"/><path d="M5.52 16h12.96"/></svg>
+              </div>
               <CardHeader>
                 <CardTitle className="text-2xl">Учёный / Организатор</CardTitle>
                 <CardDescription>Исследователь, который создаёт и курирует проекты</CardDescription>
@@ -163,30 +183,30 @@ export default function AboutPage() {
               <CardContent>
                 <ul className="text-left space-y-3 text-muted-foreground">
                   <li className="flex items-start gap-2">
-                    <span className="text-secondary">✓</span>
+                    <span className="text-primary">✓</span>
                     Участвуйте в научных проектах
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-secondary">✓</span>
+                    <span className="text-primary">✓</span>
                     Выполняйте интересные задания
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-secondary">✓</span>
+                    <span className="text-primary">✓</span>
                     Отправляйте наблюдения и отчёты
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-secondary">✓</span>
+                    <span className="text-primary">✓</span>
                     Вносите вклад в науку
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-secondary">✓</span>
+                    <span className="text-primary">✓</span>
                     Узнавайте новое о природе
                   </li>
                 </ul>
               </CardContent>
               <CardFooter className="justify-center">
                 <Link href="/auth/register?role=volunteer">
-                  <Button variant="secondary">Стать волонтёром</Button>
+                  <Button variant="primary">Стать волонтёром</Button>
                 </Link>
               </CardFooter>
             </Card>
@@ -236,7 +256,9 @@ export default function AboutPage() {
             ].map((item, index) => (
               <Card key={index} variant="outlined" className="text-center">
                 <CardContent className="pt-6">
-                  <div className="text-4xl mb-3">{item.icon}</div>
+                  <div className='flex justify-center'>
+                    <div className="text-4xl mb-3">{item.icon}</div>
+                  </div>
                   <h3 className="font-semibold text-foreground mb-2">{item.title}</h3>
                   <p className="text-sm text-muted-foreground">{item.description}</p>
                 </CardContent>
@@ -265,7 +287,7 @@ export default function AboutPage() {
               { icon: <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 21 9-9 9 9"/><path d="M12 3v18"/><path d="M12 8h8"/><path d="M12 16h8"/><path d="M8 21V10"/><path d="M16 21V10"/></svg>, name: 'Археология', description: 'Поиск исторических объектов' },
               { icon: <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>, name: 'Фотографии', description: 'Визуальная документация' },
             ].map((item, index) => (
-              <Card key={index} variant="outlined" className="hover:border-primary/30 transition-colors cursor-pointer">
+              <Card key={index} variant="outlined">
                 <CardContent className="flex items-center gap-4 py-4">
                   <div className="text-3xl flex items-center justify-center w-10 h-10">{item.icon}</div>
                   <div>
@@ -323,53 +345,10 @@ export default function AboutPage() {
         </div>
       </div>
 
-      {/* CTA */}
-      <div className="py-16 bg-[#f0fdf4]">
-        <div className="container-custom text-center">
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
-            Присоединяйтесь к нам!
-          </h2>
-          <p className="text-white/80 mb-8 max-w-xl mx-auto">
-            Тысячи волонтёров уже участвуют в научных проектах. Присоединяйтесь и вы!
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/auth/register">
-              <Button size="lg" className="bg-white text-primary hover:bg-white/90">
-                Зарегистрироваться
-              </Button>
-            </Link>
-            <Link href="/projects">
-              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
-                Смотреть проекты
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </div>
+      {/* CTA - only show if user is not logged in */}
+      <CTA isVisible={!currentUser} />
 
-      {/* Footer */}
-      <footer className="py-8 bg-foreground text-white">
-        <div className="container-custom">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center font-bold">
-                Н
-              </div>
-              <span className="text-lg font-bold">Общее дело</span>
-            </div>
-            
-            <div className="flex gap-6 text-sm text-white/60">
-              <Link href="/projects" className="hover:text-white">Проекты</Link>
-              <Link href="/about" className="hover:text-white">О платформе</Link>
-              <Link href="/auth/login" className="hover:text-white">Вход</Link>
-            </div>
-            
-            <div className="text-sm text-white/40">
-              © 2024 Общее дело
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

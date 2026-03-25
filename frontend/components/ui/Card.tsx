@@ -12,7 +12,7 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
     const variants = {
       default: 'bg-card border border-border',
       outlined: 'bg-card border-2 border-border',
-      elevated: 'bg-card shadow-lg',
+      elevated: 'bg-card',
     };
     
     const paddings = {

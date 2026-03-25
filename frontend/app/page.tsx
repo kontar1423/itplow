@@ -1,6 +1,11 @@
+'use client';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { getCurrentUser, type UserResponseDto } from '@/lib/api/client';
 import Button from '@/components/ui/Button';
 import Card, { CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/Card';
+import Footer from '@/components/layout/Footer';
+import CTA from '@/components/layout/CTA';
 
 const popularProjects = [
   {
@@ -60,6 +65,19 @@ const popularProjects = [
 ];
 
 export default function Home() {
+  const [currentUser, setCurrentUser] = useState<UserResponseDto | null>(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      getCurrentUser()
+        .then((user) => setCurrentUser(user))
+        .catch(() => {
+          localStorage.removeItem('auth_token');
+        });
+    }
+  }, []);
+
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -150,53 +168,10 @@ export default function Home() {
         </div>
       </div>
 
-      {/* CTA */}
-      <div className="py-12 bg-[#f0fdf4]">
-        <div className="container-custom text-center">
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
-            Готовы начать?
-          </h2>
-          <p className="text-white/80 mb-6 max-w-xl mx-auto">
-            Зарегистрируйтесь и примите участие в исследованиях вместе с тысячами волонтёров
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/auth/register">
-              <Button size="lg" className="bg-white text-primary hover:bg-white/90">
-                Зарегистрироваться
-              </Button>
-            </Link>
-            <Link href="/projects">
-              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
-                Смотреть проекты
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </div>
+      {/* CTA - only show if user is not logged in */}
+      <CTA isVisible={!currentUser} />
 
-      {/* Footer */}
-      <footer className="py-8 bg-foreground text-white">
-        <div className="container-custom">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center font-bold">
-                Н
-              </div>
-              <span className="text-lg font-bold">Общее дело</span>
-            </div>
-            
-            <div className="flex gap-6 text-sm text-white/60">
-              <Link href="/projects" className="hover:text-white">Проекты</Link>
-              <Link href="/about" className="hover:text-white">О платформе</Link>
-              <Link href="/auth/login" className="hover:text-white">Вход</Link>
-            </div>
-            
-            <div className="text-sm text-white/40">
-              © 2024 Общее дело
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

@@ -280,6 +280,7 @@ export interface ObservationResponseDto {
   status: string;
   files: ObservationFileDto[];
   comments?: ObservationCommentResponseDto[];
+  created_at: string;
 }
 
 export async function getObservations(projectId: string, missionId: string): Promise<ObservationResponseDto[]> {
@@ -419,4 +420,62 @@ export async function getUserProjects(): Promise<ProjectResponseDto[]> {
   // Фильтруем проекты, в которых участвует пользователь
   const userProjectIds = user.participations.map(p => p.project_id);
   return allProjects.filter(project => userProjectIds.includes(project.id));
+}
+
+export interface UserObservationDto {
+  id: string;
+  projectId: string;
+  projectTitle: string;
+  missionId: string;
+  missionTitle: string;
+  title: string;
+  description: string;
+  status: string;
+  files: ObservationFileDto[];
+  created_at: string;
+}
+
+export async function getUserObservations(): Promise<UserObservationDto[]> {
+  const user = await getCurrentUser();
+  const allProjects = await getProjects();
+  const userObservations: UserObservationDto[] = [];
+  
+  // Для каждого проекта получаем миссии и наблюдения
+  for (const project of allProjects) {
+    try {
+      const missions = await getMissions(project.id);
+      for (const mission of missions) {
+        try {
+          const observations = await getObservations(project.id, mission.id);
+          // Фильтруем наблюдения текущего пользователя
+          const userMissionObs = observations.filter(obs => obs.user_id === user.id);
+          for (const obs of userMissionObs) {
+            userObservations.push({
+              id: obs.id,
+              projectId: project.id,
+              projectTitle: project.title,
+              missionId: mission.id,
+              missionTitle: mission.title,
+              title: obs.title,
+              description: obs.description,
+              status: obs.status,
+              files: obs.files,
+              created_at: obs.created_at,
+            });
+          }
+        } catch {
+          // Если не удалось получить наблюдения для миссии, пропускаем
+          continue;
+        }
+      }
+    } catch {
+      // Если не удалось получить миссии для проекта, пропускаем
+      continue;
+    }
+  }
+  
+  // Сортируем по дате создания (новые first)
+  return userObservations.sort((a, b) => 
+    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
 }
