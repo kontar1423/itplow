@@ -8,7 +8,7 @@ import Button from '@/components/ui/Button';
 import Card, { CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
 import MyProjectsPanel from '@/components/dashboard/volunteer/MyProjectsPanel';
 import MyReportsPanel from '@/components/dashboard/volunteer/MyReportsPanel';
-import ProfilePanel from '@/components/dashboard/volunteer/ProfilePanel';
+import ProfilePanel from '@/components/dashboard/ProfilePanel';
 
 export default function VolunteerDashboardPage() {
   const router = useRouter();

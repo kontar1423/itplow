@@ -5,7 +5,11 @@ import Card, { CardHeader, CardTitle, CardContent, CardFooter } from '@/componen
 import Button from '@/components/ui/Button';
 import { getCurrentUser, updateCurrentUser, UpdateUserDto } from '@/lib/api/client';
 
-export default function ProfilePanel() {
+interface ProfilePanelProps {
+  className?: string;
+}
+
+export default function ProfilePanel({ className }: ProfilePanelProps) {
   const [user, setUser] = useState<{
     first_name: string;
     last_name: string;
@@ -17,6 +21,7 @@ export default function ProfilePanel() {
   const [formFirstName, setFormFirstName] = useState('');
   const [formLastName, setFormLastName] = useState('');
   const [formDescription, setFormDescription] = useState('');
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -44,13 +49,18 @@ export default function ProfilePanel() {
         last_name: formLastName,
         description: formDescription,
       };
-      await updateCurrentUser(updateData);
-      alert('Профиль успешно сохранён!');
+      const updatedUser = await updateCurrentUser(updateData);
+      setUser(updatedUser);
+      if (updatedUser.first_name) localStorage.setItem('user_first_name', updatedUser.first_name);
+      if (updatedUser.last_name) localStorage.setItem('user_last_name', updatedUser.last_name);
+      setMessage({ type: 'success', text: 'Профиль успешно сохранён!' });
+      setTimeout(() => window.location.reload(), 750);
     } catch (error) {
       console.error('Ошибка сохранения профиля:', error);
-      alert('Ошибка сохранения профиля');
+      setMessage({ type: 'error', text: 'Ошибка сохранения профиля' });
     } finally {
       setIsSaving(false);
+      setTimeout(() => setMessage(null), 3000);
     }
   };
 
@@ -68,7 +78,7 @@ export default function ProfilePanel() {
   }
 
   return (
-    <Card variant="outlined">
+    <Card variant="outlined" className={className}>
       <CardHeader>
         <CardTitle>Редактирование профиля</CardTitle>
       </CardHeader>
@@ -108,10 +118,15 @@ export default function ProfilePanel() {
           </div>
         </div>
       </CardContent>
-      <CardFooter>
+      <CardFooter className="flex flex-col items-start gap-3">
         <Button onClick={handleSave} disabled={isSaving}>
           {isSaving ? 'Сохранение...' : 'Сохранить изменения'}
         </Button>
+        {message && (
+          <div className={`text-sm ${message.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+            {message.text}
+          </div>
+        )}
       </CardFooter>
     </Card>
   );

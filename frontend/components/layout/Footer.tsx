@@ -34,7 +34,7 @@ export default function Footer() {
           </div>
           
           <div className="text-sm text-white/40">
-            © 2024 Общее дело
+            © 2026 Общее дело
           </div>
         </div>
       </div>

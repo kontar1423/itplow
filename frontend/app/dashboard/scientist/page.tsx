@@ -9,7 +9,7 @@ import Button from '@/components/ui/Button';
 import Card, { CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
 import ScientistProjectsPanel from '@/components/dashboard/scientist/ScientistProjectsPanel';
 import ScientistReportsPanel from '@/components/dashboard/scientist/ScientistReportsPanel';
-import ScientistProfilePanel from '@/components/dashboard/scientist/ScientistProfilePanel';
+import ProfilePanel from '@/components/dashboard/ProfilePanel';
 
 export default function ScientistDashboardPage() {
   const router = useRouter();
@@ -113,7 +113,7 @@ export default function ScientistDashboardPage() {
           )}
           
           {activeTab === 'profile' && (
-            <ScientistProfilePanel />
+            <ProfilePanel className="max-w-2xl" />
           )}
           
           {activeTab === 'settings' && (

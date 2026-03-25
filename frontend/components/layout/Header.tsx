@@ -44,8 +44,6 @@ export default function Header() {
     router.push('/');
   };
   
-  const isAuthPage = pathname?.startsWith('/auth');
-  
   const navLinks = [
     { href: '/projects', label: 'Проекты' },
     { href: '/about', label: 'О платформе' },
@@ -78,7 +76,6 @@ export default function Header() {
           </Link>
           
           {/* Навигация */}
-          {!isAuthPage && (
             <nav className="hidden md:flex items-center gap-6">
               {navLinks.map((link) => (
                 <Link
@@ -94,12 +91,9 @@ export default function Header() {
                 </Link>
               ))}
             </nav>
-          )}
           
-          {/* Кнопки авторизации */}
+          {/* Кнопки авторизации и профиля*/}
           <div className="flex items-center gap-3">
-            {!isAuthPage && (
-              <>
                 {isLoggedIn ? (
                   <div className="flex items-center gap-2">
                     <Link 
@@ -140,8 +134,6 @@ export default function Header() {
                     </Link>
                   </>
                 )}
-              </>
-            )}
           </div>
         </div>
       </div>
