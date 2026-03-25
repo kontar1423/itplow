@@ -70,6 +70,7 @@ async fn main() -> io::Result<()> {
                     .route("", web::post().to(handlers::users::register))
                     .route("/me", web::get().to(handlers::users::me))
                     .route("/me", web::put().to(handlers::users::update_me))
+                    .route("/me", web::patch().to(handlers::users::update_me))
                     .route("/{id}", web::get().to(handlers::users::public_profile))
                     .route(
                         "/{id}/projects",
