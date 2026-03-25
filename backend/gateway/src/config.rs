@@ -6,7 +6,7 @@ use crate::errors::AppError;
 pub struct Config {
     pub app_host: String,
     pub app_port: u16,
-    pub cors_allowed_origin: String,
+    pub cors_allowed_origins: Vec<String>,
     pub redis_url: String,
     pub jwt_secret: String,
     pub user_service_url: String,
@@ -16,14 +16,23 @@ pub struct Config {
 
 impl Config {
     pub fn from_env() -> Result<Self, AppError> {
+        let cors_allowed_origins = env::var("CORS_ALLOWED_ORIGINS")
+            .or_else(|_| env::var("CORS_ALLOWED_ORIGIN"))
+            .unwrap_or_else(|_| {
+                "http://localhost:3000,http://127.0.0.1:3000,http://[::]:3000".to_string()
+            })
+            .split(',')
+            .map(|origin| origin.trim().to_string())
+            .filter(|origin| !origin.is_empty())
+            .collect();
+
         Ok(Self {
             app_host: env::var("APP_HOST").unwrap_or_else(|_| "0.0.0.0".to_string()),
             app_port: env::var("APP_PORT")
                 .unwrap_or_else(|_| "8080".to_string())
                 .parse()
                 .map_err(|_| AppError::Config("APP_PORT must be a valid u16".to_string()))?,
-            cors_allowed_origin: env::var("CORS_ALLOWED_ORIGIN")
-                .unwrap_or_else(|_| "http://localhost:3000".to_string()),
+            cors_allowed_origins,
             redis_url: env::var("REDIS_URL")
                 .map_err(|_| AppError::Config("REDIS_URL is required".to_string()))?,
             jwt_secret: env::var("JWT_SECRET")

@@ -63,10 +63,17 @@ async fn main() -> io::Result<()> {
         config.app_host,
         config.app_port
     );
+    log::info!("allowed cors origins: {:?}", config.cors_allowed_origins);
 
     HttpServer::new(move || {
+        let allowed_origins = config.cors_allowed_origins.clone();
         let cors = Cors::default()
-            .allowed_origin(&config.cors_allowed_origin)
+            .allowed_origin_fn(move |origin, _req_head| {
+                origin
+                    .to_str()
+                    .map(|origin| allowed_origins.iter().any(|allowed| allowed == origin))
+                    .unwrap_or(false)
+            })
             .allowed_methods(["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"])
             .allowed_headers([header::AUTHORIZATION, header::CONTENT_TYPE])
             .supports_credentials()
@@ -105,6 +112,12 @@ async fn proxy(
 
     if !path.starts_with("/api/") {
         return Err(AppError::NotFound("Gateway route not found".to_string()));
+    }
+
+    // Let Actix CORS finalize the response headers for browser preflight
+    // without forcing auth or forwarding OPTIONS downstream.
+    if req.method() == Method::OPTIONS {
+        return Ok(HttpResponse::Ok().finish());
     }
 
     let auth_context = if is_public_route(req.method(), &path) {

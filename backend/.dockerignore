@@ -1,0 +1,11 @@
+.git
+.github
+.gitignore
+target
+docs
+frontend-playground
+**/.DS_Store
+**/.env
+**/.env.*
+tmp
+*.log
