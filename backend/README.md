@@ -46,6 +46,7 @@ backend/
 - `DATABASE_URL` — своя БД у каждого сервиса
 - `REDIS_URL` — общий Redis
 - `JWT_SECRET` — один и тот же секрет у всех сервисов и gateway
+- `CORS_ALLOWED_ORIGINS` — список разрешённых origin для gateway через запятую
 - `PROJECT_SERVICE_URL` — нужен `user-service` для получения проектов пользователя
 - `PROJECT_SERVICE_URL` — также нужен `observation-service` для проверки project/mission-контекста и модерации учёным
 - `MINIO_*` — нужны `observation-service` для хранения файлов
@@ -92,6 +93,7 @@ Gateway проверяет наличие `session:{token}` в Redis, а downstr
 - `POST /auth/logout`
 - `GET /users/me`
 - `PUT /users/me`
+- `PATCH /users/me`
 - `GET /users/:id`
 - `GET /users/:id/projects`
 - `GET /participations/:project_id`
@@ -148,4 +150,10 @@ Observation содержит:
 
 ```bash
 cargo check --workspace
+docker compose up -d --build
 ```
+
+Также вручную проверены:
+
+- `GET /health` на `gateway`, `user-service`, `project-service`, `observation-service`
+- CORS/preflight через `gateway` для локальных origin `http://localhost:3000`, `http://127.0.0.1:3000`, `http://[::]:3000`
