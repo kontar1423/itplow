@@ -408,18 +408,47 @@ export async function leaveProject(projectId: string, userId: string): Promise<v
 export async function getUserProjects(): Promise<ProjectResponseDto[]> {
   // Получаем текущего пользователя с его участиями
   const user = await getCurrentUser();
-  
+
   // Если нет участий, возвращаем пустой массив
   if (!user.participations || user.participations.length === 0) {
     return [];
   }
-  
+
   // Получаем все проекты
   const allProjects = await getProjects();
-  
+
   // Фильтруем проекты, в которых участвует пользователь
   const userProjectIds = user.participations.map(p => p.project_id);
   return allProjects.filter(project => userProjectIds.includes(project.id));
+}
+
+export async function getUserCreatedProjects(): Promise<ProjectResponseDto[]> {
+  // Получаем текущего пользователя
+  const user = await getCurrentUser();
+  
+  // Получаем проекты, созданные этим пользователем
+  const response = await fetch(`${API_BASE_URL}/users/${user.id}/projects`, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+  const projects = await handleResponse<ProjectResponseDto[]>(response);
+  
+  // Для каждого проекта получаем количество миссий
+  const projectsWithMissions = await Promise.all(
+    projects.map(async (project) => {
+      try {
+        const missions = await getMissions(project.id);
+        return {
+          ...project,
+          tasks_count: missions.length,
+        };
+      } catch {
+        return project;
+      }
+    })
+  );
+  
+  return projectsWithMissions;
 }
 
 export interface UserObservationDto {

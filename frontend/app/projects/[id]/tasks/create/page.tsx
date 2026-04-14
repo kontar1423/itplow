@@ -113,7 +113,7 @@ export default function CreateTaskPage() {
                 <Input
                   label="Название задания"
                   name="title"
-                  placeholder="Например: Подсчёт птиц в парке"
+                  placeholder=""
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   required

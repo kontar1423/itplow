@@ -14,12 +14,14 @@ export default function ProfilePanel({ className }: ProfilePanelProps) {
     first_name: string;
     last_name: string;
     email: string;
+    phone: string;
     description: string;
   } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [formFirstName, setFormFirstName] = useState('');
   const [formLastName, setFormLastName] = useState('');
+  const [formPhone, setFormPhone] = useState('');
   const [formDescription, setFormDescription] = useState('');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -30,6 +32,7 @@ export default function ProfilePanel({ className }: ProfilePanelProps) {
         setUser(data);
         setFormFirstName(data.first_name || '');
         setFormLastName(data.last_name || '');
+        setFormPhone(data.phone || '');
         setFormDescription(data.description || '');
       } catch (error) {
         console.error('Ошибка загрузки пользователя:', error);
@@ -47,6 +50,7 @@ export default function ProfilePanel({ className }: ProfilePanelProps) {
       const updateData: UpdateUserDto = {
         first_name: formFirstName,
         last_name: formLastName,
+        phone: formPhone,
         description: formDescription,
       };
       const updatedUser = await updateCurrentUser(updateData);
@@ -94,11 +98,23 @@ export default function ProfilePanel({ className }: ProfilePanelProps) {
         </div>
         <div>
           <label className="text-sm font-medium text-foreground mb-1.5 block">Фамилия</label>
-          <input 
-            type="text" 
+          <input
+            type="text"
             value={formLastName}
             onChange={(e) => setFormLastName(e.target.value)}
             className="w-full px-4 py-2.5 rounded-lg border border-border bg-white"
+          />
+        </div>
+        <div>
+          <label className="text-sm font-medium text-foreground mb-1.5 block">
+            Контактная информация (будет видна пользователям с ваших проектов)
+          </label>
+          <input
+            type="tel"
+            value={formPhone}
+            onChange={(e) => setFormPhone(e.target.value)}
+            className="w-full px-4 py-2.5 rounded-lg border border-border bg-white"
+            placeholder="Номер телефона"
           />
         </div>
         <div>
@@ -112,7 +128,7 @@ export default function ProfilePanel({ className }: ProfilePanelProps) {
           />
         </div>
         <div>
-          <label className="text-sm font-medium text-foreground mb-1.5 block">Email</label>
+          <label className="text-sm font-medium text-foreground mb-1.5 block">Email (будет виден пользователям с ваших проектов)</label>
           <div className="w-full px-4 py-2.5 rounded-lg border border-border bg-muted text-muted-foreground">
             {user?.email || 'Загрузка...'}
           </div>

@@ -28,21 +28,24 @@ export default function CreateProjectPage() {
     e.preventDefault();
     setIsSubmitting(true);
     setError('');
-    
+
     const projectData: CreateProjectDto = {
       title: formData.title,
       description: formData.description,
       status: 'active',
       tags: formData.tags.split(',').map(t => t.trim()).filter(Boolean),
     };
-    
+
     try {
       await createProject(projectData);
       setIsSubmitting(false);
-      router.push('/projects');
+      // Перенаправляем на дашборд ученого после успешного создания
+      router.push('/dashboard/scientist');
     } catch (err) {
       setIsSubmitting(false);
-      setError(err instanceof Error ? err.message : 'Ошибка создания проекта');
+      const errorMessage = err instanceof Error ? err.message : 'Ошибка создания проекта';
+      setError(errorMessage);
+      console.error('Ошибка создания проекта:', err);
     }
   };
 
@@ -100,10 +103,26 @@ export default function CreateProjectPage() {
             </CardHeader>
             <form onSubmit={handleSubmit}>
               <CardContent className="space-y-6">
+                {error && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 flex-shrink-0">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="8" x2="12" y2="12"/>
+                        <line x1="12" y1="16" x2="12.01" y2="16"/>
+                      </svg>
+                      <div>
+                        <p className="font-medium">Ошибка создания проекта</p>
+                        <p className="text-sm mt-1">{error}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <Input
                   label="Название проекта"
                   name="title"
-                  placeholder="Например: Мониторинг птиц Москвы"
+                  placeholder=""
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   required

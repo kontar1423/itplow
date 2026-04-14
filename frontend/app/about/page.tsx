@@ -138,7 +138,7 @@ export default function AboutPage() {
                   <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><path d="M10 2v7.31"/><path d="M14 9.3V1.99"/><path d="M8.5 2h7"/><path d="M14 9.3a6.5 6.5 0 1 1-4 0"/><path d="M5.52 16h12.96"/></svg>
               </div>
               <CardHeader>
-                <CardTitle className="text-2xl">Учёный / Организатор</CardTitle>
+                <CardTitle className="text-2xl">Учёный</CardTitle>
                 <CardDescription>Исследователь, который создаёт и курирует проекты</CardDescription>
               </CardHeader>
               <CardContent>
@@ -167,7 +167,7 @@ export default function AboutPage() {
               </CardContent>
               <CardFooter className="justify-center">
                 <Link href="/auth/register?role=scientist">
-                  <Button>Стать организатором</Button>
+                  <Button>Стать ученым</Button>
                 </Link>
               </CardFooter>
             </Card>
