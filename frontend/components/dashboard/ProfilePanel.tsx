@@ -1,22 +1,20 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import Card, { CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
-import { getCurrentUser, updateCurrentUser, UpdateUserDto } from '@/lib/api/client';
+import { getCurrentUser, updateCurrentUser, UpdateUserDto, UserResponseDto } from '@/lib/api/client';
 
 interface ProfilePanelProps {
   className?: string;
 }
 
+function isScientistRole(role: string | undefined): boolean {
+  return role === 'admin' || role === 'scientist';
+}
+
 export default function ProfilePanel({ className }: ProfilePanelProps) {
-  const [user, setUser] = useState<{
-    first_name: string;
-    last_name: string;
-    email: string;
-    phone: string;
-    description: string;
-  } | null>(null);
+  const [user, setUser] = useState<UserResponseDto | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [formFirstName, setFormFirstName] = useState('');
@@ -24,6 +22,7 @@ export default function ProfilePanel({ className }: ProfilePanelProps) {
   const [formPhone, setFormPhone] = useState('');
   const [formDescription, setFormDescription] = useState('');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [isScientist, setIsScientist] = useState(false);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -34,6 +33,9 @@ export default function ProfilePanel({ className }: ProfilePanelProps) {
         setFormLastName(data.last_name || '');
         setFormPhone(data.phone || '');
         setFormDescription(data.description || '');
+
+        const roleFromStorage = typeof window !== 'undefined' ? localStorage.getItem('user_role') : null;
+        setIsScientist(isScientistRole(data.role) || roleFromStorage === 'scientist');
       } catch (error) {
         console.error('Ошибка загрузки пользователя:', error);
       } finally {
@@ -41,7 +43,7 @@ export default function ProfilePanel({ className }: ProfilePanelProps) {
       }
     };
 
-    loadUser();
+    void loadUser();
   }, []);
 
   const handleSave = async () => {
@@ -53,11 +55,17 @@ export default function ProfilePanel({ className }: ProfilePanelProps) {
         phone: formPhone,
         description: formDescription,
       };
+
       const updatedUser = await updateCurrentUser(updateData);
       setUser(updatedUser);
-      if (updatedUser.first_name) localStorage.setItem('user_first_name', updatedUser.first_name);
-      if (updatedUser.last_name) localStorage.setItem('user_last_name', updatedUser.last_name);
-      setMessage({ type: 'success', text: 'Профиль успешно сохранён!' });
+      if (updatedUser.first_name) {
+        localStorage.setItem('user_first_name', updatedUser.first_name);
+      }
+      if (updatedUser.last_name) {
+        localStorage.setItem('user_last_name', updatedUser.last_name);
+      }
+
+      setMessage({ type: 'success', text: 'Профиль успешно сохранен!' });
       setTimeout(() => window.location.reload(), 750);
     } catch (error) {
       console.error('Ошибка сохранения профиля:', error);
@@ -89,8 +97,8 @@ export default function ProfilePanel({ className }: ProfilePanelProps) {
       <CardContent className="space-y-4">
         <div>
           <label className="text-sm font-medium text-foreground mb-1.5 block">Имя</label>
-          <input 
-            type="text" 
+          <input
+            type="text"
             value={formFirstName}
             onChange={(e) => setFormFirstName(e.target.value)}
             className="w-full px-4 py-2.5 rounded-lg border border-border bg-white"
@@ -107,7 +115,7 @@ export default function ProfilePanel({ className }: ProfilePanelProps) {
         </div>
         <div>
           <label className="text-sm font-medium text-foreground mb-1.5 block">
-            Контактная информация (будет видна пользователям с ваших проектов)
+            {isScientist ? 'Контактная информация (будет видна пользователям с ваших проектов)' : 'Контактная информация'}
           </label>
           <input
             type="tel"
@@ -119,7 +127,7 @@ export default function ProfilePanel({ className }: ProfilePanelProps) {
         </div>
         <div>
           <label className="text-sm font-medium text-foreground mb-1.5 block">О себе</label>
-          <textarea 
+          <textarea
             value={formDescription}
             onChange={(e) => setFormDescription(e.target.value)}
             rows={3}
@@ -128,7 +136,9 @@ export default function ProfilePanel({ className }: ProfilePanelProps) {
           />
         </div>
         <div>
-          <label className="text-sm font-medium text-foreground mb-1.5 block">Email (будет виден пользователям с ваших проектов)</label>
+          <label className="text-sm font-medium text-foreground mb-1.5 block">
+            {isScientist ? 'Email (будет виден пользователям с ваших проектов)' : 'Email'}
+          </label>
           <div className="w-full px-4 py-2.5 rounded-lg border border-border bg-muted text-muted-foreground">
             {user?.email || 'Загрузка...'}
           </div>

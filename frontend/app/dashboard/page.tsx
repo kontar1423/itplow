@@ -2,17 +2,33 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { getCurrentUser } from '@/lib/api/client';
 
 export default function DashboardPage() {
   const router = useRouter();
   
   useEffect(() => {
-    const savedRole = localStorage.getItem('user_role');
-    if (savedRole === 'scientist') {
-      router.replace('/dashboard/scientist');
-    } else if (savedRole === 'volunteer') {
-      router.replace('/dashboard/volunteer');
-    }
+    const resolveDashboard = async () => {
+      try {
+        const user = await getCurrentUser();
+        if (user.role === 'admin') {
+          router.replace('/dashboard/scientist');
+          return;
+        }
+        router.replace('/dashboard/volunteer');
+      } catch {
+        const savedRole = localStorage.getItem('user_role');
+        if (savedRole === 'scientist') {
+          router.replace('/dashboard/scientist');
+        } else if (savedRole === 'volunteer') {
+          router.replace('/dashboard/volunteer');
+        } else {
+          router.replace('/auth/login');
+        }
+      }
+    };
+
+    void resolveDashboard();
   }, [router]);
 
   return (

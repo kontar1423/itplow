@@ -1,6 +1,6 @@
-'use client';
+﻿'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Avatar from '@/components/ui/Avatar';
@@ -11,22 +11,44 @@ import ScientistProjectsPanel from '@/components/dashboard/scientist/ScientistPr
 import ScientistReportsPanel from '@/components/dashboard/scientist/ScientistReportsPanel';
 import ProfilePanel from '@/components/dashboard/ProfilePanel';
 
+function getStoredUserName(): string {
+  if (typeof window === 'undefined') {
+    return 'Пользователь';
+  }
+
+  const firstName = localStorage.getItem('user_first_name') || '';
+  const lastName = localStorage.getItem('user_last_name') || '';
+  return firstName && lastName ? `${firstName} ${lastName}` : firstName || lastName || 'Пользователь';
+}
+
+const emptySubscribe = () => () => {};
+
+const subscribeUserName = (callback: () => void) => {
+  if (typeof window === 'undefined') {
+    return () => {};
+  }
+
+  const handler = () => callback();
+  window.addEventListener('storage', handler);
+  window.addEventListener('auth-changed', handler);
+  window.addEventListener('focus', handler);
+
+  return () => {
+    window.removeEventListener('storage', handler);
+    window.removeEventListener('auth-changed', handler);
+    window.removeEventListener('focus', handler);
+  };
+};
 export default function ScientistDashboardPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('projects');
-  const [userName, setUserName] = useState('');
-  
+  const userName = useSyncExternalStore(typeof window === 'undefined' ? emptySubscribe : subscribeUserName, getStoredUserName, () => 'Пользователь');
+
   useEffect(() => {
     const savedRole = localStorage.getItem('user_role');
     if (savedRole === 'volunteer') {
       router.push('/dashboard/volunteer');
     }
-    
-    // Загружаем имя пользователя из localStorage
-    const firstName = localStorage.getItem('user_first_name') || '';
-    const lastName = localStorage.getItem('user_last_name') || '';
-    const name = firstName && lastName ? `${firstName} ${lastName}` : firstName || lastName || 'Пользователь';
-    setUserName(name);
   }, [router]);
 
   return (
@@ -40,39 +62,19 @@ export default function ScientistDashboardPage() {
                 <div className="font-medium text-foreground">{userName}</div>
                 <div className="text-sm text-muted-foreground flex items-center gap-2">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 2v7.31"/><path d="M14 9.3V1.99"/><path d="M8.5 2h7"/><path d="M14 9.3a6.5 6.5 0 1 1-4 0"/><path d="M5.52 16h12.96"/></svg>
-                  Учёный
+                  Ученый
                 </div>
               </div>
             </div>
-            
+
             <nav className="space-y-1">
-              <NavItem 
-                active={activeTab === 'projects'} 
-                onClick={() => setActiveTab('projects')}
-                icon={<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>}
-                label="Мои проекты"
-              />
-              <NavItem 
-                active={activeTab === 'reports'} 
-                onClick={() => setActiveTab('reports')}
-                icon={<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>}
-                label="Отчёты"
-              />
-              <NavItem 
-                active={activeTab === 'profile'} 
-                onClick={() => setActiveTab('profile')}
-                icon={<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>}
-                label="Профиль"
-              />
-              <NavItem 
-                active={activeTab === 'settings'} 
-                onClick={() => setActiveTab('settings')}
-                icon={<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>}
-                label="Настройки"
-              />
+              <NavItem active={activeTab === 'projects'} onClick={() => setActiveTab('projects')} icon={<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>} label="Мои проекты" />
+              <NavItem active={activeTab === 'reports'} onClick={() => setActiveTab('reports')} icon={<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>} label="Отчеты" />
+              <NavItem active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon={<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>} label="Профиль" />
+              <NavItem active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} icon={<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>} label="Настройки" />
             </nav>
           </div>
-          
+
           <div className="p-6 border-t border-border">
             <Button variant="ghost" className="w-full justify-start" onClick={() => {
               localStorage.removeItem('auth_token');
@@ -83,17 +85,17 @@ export default function ScientistDashboardPage() {
             </Button>
           </div>
         </aside>
-        
+
         <main className="flex-1 p-8">
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-foreground mb-2">
               {activeTab === 'projects' && 'Мои проекты'}
-              {activeTab === 'reports' && 'Отчёты'}
+              {activeTab === 'reports' && 'Отчеты'}
               {activeTab === 'profile' && 'Профиль'}
               {activeTab === 'settings' && 'Настройки'}
             </h1>
           </div>
-          
+
           {activeTab === 'projects' && (
             <div className="space-y-4">
               <div className="flex justify-end">
@@ -107,23 +109,16 @@ export default function ScientistDashboardPage() {
               <ScientistProjectsPanel />
             </div>
           )}
-          
-          {activeTab === 'reports' && (
-            <ScientistReportsPanel />
-          )}
-          
-          {activeTab === 'profile' && (
-            <ProfilePanel className="max-w-2xl" />
-          )}
-          
+
+          {activeTab === 'reports' && <ScientistReportsPanel />}
+          {activeTab === 'profile' && <ProfilePanel className="max-w-2xl" />}
+
           {activeTab === 'settings' && (
             <div className="space-y-6 max-w-2xl">
               <Card variant="outlined">
                 <CardHeader>
                   <CardTitle>Уведомления</CardTitle>
-                  <CardDescription>
-                    Настройка уведомлений
-                  </CardDescription>
+                  <CardDescription>Настройка уведомлений</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <label className="flex items-center justify-between">
@@ -135,8 +130,8 @@ export default function ScientistDashboardPage() {
                   </label>
                   <label className="flex items-center justify-between">
                     <div>
-                      <div className="font-medium text-foreground">Уведомления о новых отчётах</div>
-                      <div className="text-sm text-muted-foreground">Получать уведомления о новых отчётах</div>
+                      <div className="font-medium text-foreground">Уведомления о новых отчетах</div>
+                      <div className="text-sm text-muted-foreground">Получать уведомления о новых отчетах</div>
                     </div>
                     <input type="checkbox" defaultChecked className="toggle" />
                   </label>
@@ -149,3 +144,4 @@ export default function ScientistDashboardPage() {
     </div>
   );
 }
+

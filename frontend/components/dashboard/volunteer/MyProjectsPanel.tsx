@@ -5,7 +5,29 @@ import Link from 'next/link';
 import Card, { CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
-import { getUserProjects, ProjectResponseDto } from '@/lib/api/client';
+import {
+  getCurrentUser,
+  getMissions,
+  getParticipations,
+  getProjects,
+  ProjectResponseDto,
+} from '@/lib/api/client';
+
+function formatCount(count: number, one: string, few: string, many: string): string {
+  const abs = Math.abs(count) % 100;
+  const last = abs % 10;
+
+  if (abs > 10 && abs < 20) {
+    return `${count} ${many}`;
+  }
+  if (last === 1) {
+    return `${count} ${one}`;
+  }
+  if (last >= 2 && last <= 4) {
+    return `${count} ${few}`;
+  }
+  return `${count} ${many}`;
+}
 
 export default function MyProjectsPanel() {
   const [projects, setProjects] = useState<ProjectResponseDto[]>([]);
@@ -14,16 +36,64 @@ export default function MyProjectsPanel() {
   useEffect(() => {
     const loadProjects = async () => {
       try {
-        const data = await getUserProjects();
-        setProjects(data);
+        const [user, allProjects] = await Promise.all([getCurrentUser(), getProjects()]);
+
+        const userProjectIds = new Set(user.participations?.map((participation) => participation.project_id) ?? []);
+        if (userProjectIds.size === 0) {
+          const membershipChecks = await Promise.all(
+            allProjects.map(async (project) => {
+              try {
+                const participations = await getParticipations(project.id);
+                return participations.some((participant) => participant.user_id === user.id) ? project.id : null;
+              } catch {
+                return null;
+              }
+            })
+          );
+
+          membershipChecks.forEach((projectId) => {
+            if (projectId) {
+              userProjectIds.add(projectId);
+            }
+          });
+        }
+
+        const participantProjects = allProjects.filter((project) => userProjectIds.has(project.id));
+        const projectsWithStats = await Promise.all(
+          participantProjects.map(async (project) => {
+            const output: ProjectResponseDto = { ...project };
+
+            if (typeof output.tasks_count !== 'number') {
+              try {
+                const missions = await getMissions(project.id);
+                output.tasks_count = missions.length;
+              } catch {
+                output.tasks_count = 0;
+              }
+            }
+
+            if (typeof output.participants_count !== 'number') {
+              try {
+                const participations = await getParticipations(project.id);
+                output.participants_count = participations.length;
+              } catch {
+                output.participants_count = 0;
+              }
+            }
+
+            return output;
+          })
+        );
+
+        setProjects(projectsWithStats);
       } catch (error) {
-        console.error('Ошибка загрузки проектов:', error);
+        console.error('Ошибка загрузки проектов волонтера:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadProjects();
+    void loadProjects();
   }, []);
 
   if (isLoading) {
@@ -58,26 +128,21 @@ export default function MyProjectsPanel() {
                 </CardDescription>
               </div>
               <Badge variant={project.status === 'active' ? 'success' : 'default'}>
-                {project.status === 'active' ? 'Активен' : 'Завершён'}
+                {project.status === 'active' ? 'Активен' : 'Неактивен'}
               </Badge>
             </div>
           </CardHeader>
-          <CardContent className="pb-3">
+          <CardContent className="pb-3 space-y-3">
             <div className="flex flex-wrap gap-2">
               {project.tags.map((tag) => (
                 <Badge key={tag} variant="outline">{tag}</Badge>
               ))}
             </div>
-            {project.description && (
-              <p className="mt-3 text-sm text-muted-foreground line-clamp-2">
-                {project.description}
-              </p>
-            )}
-          </CardContent>
-          <CardFooter className="flex justify-between items-center">
             <div className="text-sm text-muted-foreground">
-              {project.participants_count || 0} участников
+              {formatCount(project.tasks_count ?? 0, 'задание', 'задания', 'заданий')} • {formatCount(project.participants_count ?? 0, 'участник', 'участника', 'участников')}
             </div>
+          </CardContent>
+          <CardFooter className="flex justify-end">
             <Link href={`/projects/${project.id}`}>
               <Button variant="outline" size="sm">
                 Перейти к проекту

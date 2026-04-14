@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { HTMLAttributes, forwardRef } from 'react';
 
@@ -14,7 +14,7 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
       outlined: 'bg-card border-2 border-border',
       elevated: 'bg-card',
     };
-    
+
     const paddings = {
       none: '',
       sm: 'p-4',
@@ -36,15 +36,11 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
 
 Card.displayName = 'Card';
 
-interface CardHeaderProps extends HTMLAttributes<HTMLDivElement> {}
+type CardHeaderProps = HTMLAttributes<HTMLDivElement>;
 
 const CardHeader = forwardRef<HTMLDivElement, CardHeaderProps>(
   ({ className = '', children, ...props }, ref) => (
-    <div
-      ref={ref}
-      className={`mb-4 ${className}`}
-      {...props}
-    >
+    <div ref={ref} className={`mb-4 ${className}`} {...props}>
       {children}
     </div>
   )
@@ -52,15 +48,11 @@ const CardHeader = forwardRef<HTMLDivElement, CardHeaderProps>(
 
 CardHeader.displayName = 'CardHeader';
 
-interface CardTitleProps extends HTMLAttributes<HTMLHeadingElement> {}
+type CardTitleProps = HTMLAttributes<HTMLHeadingElement>;
 
 const CardTitle = forwardRef<HTMLHeadingElement, CardTitleProps>(
   ({ className = '', children, ...props }, ref) => (
-    <h3
-      ref={ref}
-      className={`text-xl font-semibold text-card-foreground ${className}`}
-      {...props}
-    >
+    <h3 ref={ref} className={`text-xl font-semibold text-card-foreground ${className}`} {...props}>
       {children}
     </h3>
   )
@@ -68,15 +60,11 @@ const CardTitle = forwardRef<HTMLHeadingElement, CardTitleProps>(
 
 CardTitle.displayName = 'CardTitle';
 
-interface CardDescriptionProps extends HTMLAttributes<HTMLParagraphElement> {}
+type CardDescriptionProps = HTMLAttributes<HTMLParagraphElement>;
 
 const CardDescription = forwardRef<HTMLParagraphElement, CardDescriptionProps>(
   ({ className = '', children, ...props }, ref) => (
-    <p
-      ref={ref}
-      className={`text-sm text-muted-foreground mt-1 ${className}`}
-      {...props}
-    >
+    <p ref={ref} className={`text-sm text-muted-foreground mt-1 ${className}`} {...props}>
       {children}
     </p>
   )
@@ -84,15 +72,11 @@ const CardDescription = forwardRef<HTMLParagraphElement, CardDescriptionProps>(
 
 CardDescription.displayName = 'CardDescription';
 
-interface CardContentProps extends HTMLAttributes<HTMLDivElement> {}
+type CardContentProps = HTMLAttributes<HTMLDivElement>;
 
 const CardContent = forwardRef<HTMLDivElement, CardContentProps>(
   ({ className = '', children, ...props }, ref) => (
-    <div
-      ref={ref}
-      className={className}
-      {...props}
-    >
+    <div ref={ref} className={className} {...props}>
       {children}
     </div>
   )
@@ -100,15 +84,11 @@ const CardContent = forwardRef<HTMLDivElement, CardContentProps>(
 
 CardContent.displayName = 'CardContent';
 
-interface CardFooterProps extends HTMLAttributes<HTMLDivElement> {}
+type CardFooterProps = HTMLAttributes<HTMLDivElement>;
 
 const CardFooter = forwardRef<HTMLDivElement, CardFooterProps>(
   ({ className = '', children, ...props }, ref) => (
-    <div
-      ref={ref}
-      className={`mt-4 pt-4 border-t border-border flex items-center ${className}`}
-      {...props}
-    >
+    <div ref={ref} className={`mt-4 pt-4 border-t border-border flex items-center ${className}`} {...props}>
       {children}
     </div>
   )
