@@ -107,11 +107,13 @@ Gateway проверяет наличие `session:{token}` в Redis, а downstr
 - `GET /projects/:id`
 - `POST /projects` — только `scientist` или `admin`
 - `PUT /projects/:id` — владелец-`scientist` или `admin`
+- `PATCH /projects/:id` — владелец-`scientist` или `admin`
 - `DELETE /projects/:id` — владелец-`scientist` или `admin`
 - `GET /projects/:id/missions`
 - `GET /projects/:id/missions/:mission_id`
 - `POST /projects/:id/missions` — владелец-`scientist` или `admin`
 - `PUT /projects/:id/missions/:mission_id` — владелец-`scientist` или `admin`
+- `PATCH /projects/:id/missions/:mission_id` — владелец-`scientist` или `admin`
 - `DELETE /projects/:id/missions/:mission_id` — владелец-`scientist` или `admin`
 - `GET /internal/users/:user_id/projects`
 

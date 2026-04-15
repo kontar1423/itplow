@@ -69,6 +69,7 @@ async fn main() -> io::Result<()> {
                     .route("/by_tags", web::get().to(handlers::projects::by_tags))
                     .route("/{id}", web::get().to(handlers::projects::get_project))
                     .route("/{id}", web::put().to(handlers::projects::update_project))
+                    .route("/{id}", web::patch().to(handlers::projects::update_project))
                     .route(
                         "/{id}",
                         web::delete().to(handlers::projects::delete_project),
@@ -84,6 +85,10 @@ async fn main() -> io::Result<()> {
                             .route(
                                 "/{mission_id}",
                                 web::put().to(handlers::missions::update_mission),
+                            )
+                            .route(
+                                "/{mission_id}",
+                                web::patch().to(handlers::missions::update_mission),
                             )
                             .route(
                                 "/{mission_id}",
