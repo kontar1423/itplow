@@ -103,7 +103,7 @@ Gateway проверяет наличие `session:{token}` в Redis, а downstr
 ### project-service
 
 - `GET /projects`
-- `GET /projects/by_tags`
+- `GET /projects/by_tags` — фильтрация проектов по одному или нескольким тегам
 - `GET /projects/:id`
 - `POST /projects` — только `scientist` или `admin`
 - `PUT /projects/:id` — владелец-`scientist` или `admin`
@@ -116,6 +116,15 @@ Gateway проверяет наличие `session:{token}` в Redis, а downstr
 - `PATCH /projects/:id/missions/:mission_id` — владелец-`scientist` или `admin`
 - `DELETE /projects/:id/missions/:mission_id` — владелец-`scientist` или `admin`
 - `GET /internal/users/:user_id/projects`
+
+Project содержит:
+
+- `title`
+- `description`
+- `status`
+- `tags`
+
+Во внешнем API `tags` передаются и возвращаются как массив строк, но в PostgreSQL они хранятся в отдельной таблице `tags` с полями `project_id` и `name`.
 
 ### observation-service
 
@@ -144,6 +153,7 @@ Observation содержит:
 - миграции запускаются автоматически при старте каждого сервиса через `sqlx::migrate!`
 - `user-service` публикует `user.created` в Redis pub/sub
 - `project-service` публикует `project.created` и `mission.created`
+- `project-service` хранит теги проектов в отдельной таблице `tags`, связанной с `projects` по `project_id`
 - `observation-service` создаёт bucket в MinIO при старте, если его ещё нет
 
 ## Проверка

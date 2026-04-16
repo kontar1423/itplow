@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use actix_web::{HttpResponse, web};
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
@@ -65,14 +67,30 @@ pub async fn list_projects(
 
     let rows = sqlx::query_as::<_, ProjectRecord>(
         r#"
-        SELECT id, user_id, title, description, status, tags, created_at
-        FROM projects
-        WHERE ($1::text IS NULL OR lower(title) LIKE $1)
+        SELECT
+            p.id,
+            p.user_id,
+            p.title,
+            p.description,
+            p.status,
+            COALESCE(
+                array_agg(t.name ORDER BY lower(t.name), t.name)
+                    FILTER (WHERE t.name IS NOT NULL),
+                '{}'::text[]
+            ) AS tags,
+            p.created_at
+        FROM projects p
+        LEFT JOIN tags t ON t.project_id = p.id
+        WHERE ($1::text IS NULL OR lower(p.title) LIKE $1)
           AND ($2::text IS NULL OR EXISTS (
-              SELECT 1 FROM unnest(tags) AS tag_value WHERE lower(tag_value) = $2
+              SELECT 1
+              FROM tags tag_filter
+              WHERE tag_filter.project_id = p.id
+                AND lower(tag_filter.name) = $2
           ))
-          AND ($3::uuid IS NULL OR user_id = $3)
-        ORDER BY created_at DESC
+          AND ($3::uuid IS NULL OR p.user_id = $3)
+        GROUP BY p.id, p.user_id, p.title, p.description, p.status, p.created_at
+        ORDER BY p.created_at DESC
         "#,
     )
     .bind(title)
@@ -104,12 +122,34 @@ pub async fn by_tags(
         .map(|value| value.to_lowercase())
         .collect();
 
+    if tags.is_empty() {
+        return Ok(HttpResponse::Ok().json(Vec::<ProjectRecord>::new()));
+    }
+
     let rows = sqlx::query_as::<_, ProjectRecord>(
         r#"
-        SELECT id, user_id, title, description, status, tags, created_at
-        FROM projects
-        WHERE tags && $1
-        ORDER BY created_at DESC
+        SELECT
+            p.id,
+            p.user_id,
+            p.title,
+            p.description,
+            p.status,
+            COALESCE(
+                array_agg(t.name ORDER BY lower(t.name), t.name)
+                    FILTER (WHERE t.name IS NOT NULL),
+                '{}'::text[]
+            ) AS tags,
+            p.created_at
+        FROM projects p
+        LEFT JOIN tags t ON t.project_id = p.id
+        WHERE EXISTS (
+            SELECT 1
+            FROM tags tag_filter
+            WHERE tag_filter.project_id = p.id
+              AND lower(tag_filter.name) = ANY($1::text[])
+        )
+        GROUP BY p.id, p.user_id, p.title, p.description, p.status, p.created_at
+        ORDER BY p.created_at DESC
         "#,
     )
     .bind(tags)
@@ -130,20 +170,32 @@ pub async fn create_project(
         ));
     }
 
-    let row = sqlx::query_as::<_, ProjectRecord>(
+    let tags = payload
+        .tags
+        .as_deref()
+        .map(normalize_tags)
+        .unwrap_or_default();
+
+    let mut tx = state.db.begin().await?;
+
+    let project_id = sqlx::query_scalar::<_, Uuid>(
         r#"
-        INSERT INTO projects (user_id, title, description, status, tags)
-        VALUES ($1, $2, $3, $4, $5)
-        RETURNING id, user_id, title, description, status, tags, created_at
+        INSERT INTO projects (user_id, title, description, status)
+        VALUES ($1, $2, $3, $4)
+        RETURNING id
         "#,
     )
     .bind(auth.user_id)
     .bind(payload.title.trim())
     .bind(payload.description.as_deref())
     .bind(payload.status.trim())
-    .bind(payload.tags.clone().unwrap_or_default())
-    .fetch_one(&state.db)
+    .fetch_one(&mut *tx)
     .await?;
+
+    replace_project_tags(&mut tx, project_id, &tags).await?;
+    tx.commit().await?;
+
+    let row = fetch_project(&state, project_id).await?;
 
     if let Err(err) = publish_event(
         state.get_ref(),
@@ -170,15 +222,16 @@ pub async fn update_project(
     payload: web::Json<UpdateProjectDto>,
 ) -> Result<HttpResponse, AppError> {
     let project_id = path.into_inner();
-    ensure_project_access(&state, &auth, project_id).await?;
-    let current = fetch_project(&state, project_id).await?;
+    let current = ensure_project_access(&state, &auth, project_id).await?;
+    let next_tags = payload.tags.as_deref().map(normalize_tags);
 
-    let row = sqlx::query_as::<_, ProjectRecord>(
+    let mut tx = state.db.begin().await?;
+
+    sqlx::query(
         r#"
         UPDATE projects
-        SET title = $2, description = $3, status = $4, tags = $5
+        SET title = $2, description = $3, status = $4
         WHERE id = $1
-        RETURNING id, user_id, title, description, status, tags, created_at
         "#,
     )
     .bind(project_id)
@@ -190,9 +243,16 @@ pub async fn update_project(
             .or(current.description.as_deref()),
     )
     .bind(payload.status.as_deref().unwrap_or(&current.status))
-    .bind(payload.tags.clone().unwrap_or(current.tags))
-    .fetch_one(&state.db)
+    .execute(&mut *tx)
     .await?;
+
+    if let Some(tags) = next_tags.as_deref() {
+        replace_project_tags(&mut tx, project_id, tags).await?;
+    }
+
+    tx.commit().await?;
+
+    let row = fetch_project(&state, project_id).await?;
 
     log::info!(
         "project updated: id={}, actor_id={}",
@@ -235,10 +295,23 @@ pub async fn user_projects(
     let user_id = path.into_inner();
     let rows = sqlx::query_as::<_, ProjectRecord>(
         r#"
-        SELECT id, user_id, title, description, status, tags, created_at
-        FROM projects
-        WHERE user_id = $1
-        ORDER BY created_at DESC
+        SELECT
+            p.id,
+            p.user_id,
+            p.title,
+            p.description,
+            p.status,
+            COALESCE(
+                array_agg(t.name ORDER BY lower(t.name), t.name)
+                    FILTER (WHERE t.name IS NOT NULL),
+                '{}'::text[]
+            ) AS tags,
+            p.created_at
+        FROM projects p
+        LEFT JOIN tags t ON t.project_id = p.id
+        WHERE p.user_id = $1
+        GROUP BY p.id, p.user_id, p.title, p.description, p.status, p.created_at
+        ORDER BY p.created_at DESC
         "#,
     )
     .bind(user_id)
@@ -251,9 +324,22 @@ pub async fn user_projects(
 pub async fn fetch_project(state: &AppState, project_id: Uuid) -> Result<ProjectRecord, AppError> {
     sqlx::query_as::<_, ProjectRecord>(
         r#"
-        SELECT id, user_id, title, description, status, tags, created_at
-        FROM projects
-        WHERE id = $1
+        SELECT
+            p.id,
+            p.user_id,
+            p.title,
+            p.description,
+            p.status,
+            COALESCE(
+                array_agg(t.name ORDER BY lower(t.name), t.name)
+                    FILTER (WHERE t.name IS NOT NULL),
+                '{}'::text[]
+            ) AS tags,
+            p.created_at
+        FROM projects p
+        LEFT JOIN tags t ON t.project_id = p.id
+        WHERE p.id = $1
+        GROUP BY p.id, p.user_id, p.title, p.description, p.status, p.created_at
         "#,
     )
     .bind(project_id)
@@ -275,4 +361,49 @@ pub async fn ensure_project_access(
         return Err(AppError::Forbidden("Project access denied".to_string()));
     }
     Ok(project)
+}
+
+async fn replace_project_tags(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    project_id: Uuid,
+    tags: &[String],
+) -> Result<(), AppError> {
+    sqlx::query("DELETE FROM tags WHERE project_id = $1")
+        .bind(project_id)
+        .execute(&mut **tx)
+        .await?;
+
+    for tag in tags {
+        sqlx::query(
+            r#"
+            INSERT INTO tags (project_id, name)
+            VALUES ($1, $2)
+            ON CONFLICT DO NOTHING
+            "#,
+        )
+        .bind(project_id)
+        .bind(tag)
+        .execute(&mut **tx)
+        .await?;
+    }
+
+    Ok(())
+}
+
+fn normalize_tags(tags: &[String]) -> Vec<String> {
+    let mut seen = HashSet::new();
+    let mut normalized = Vec::new();
+
+    for tag in tags {
+        let trimmed = tag.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+
+        if seen.insert(trimmed.to_lowercase()) {
+            normalized.push(trimmed.to_string());
+        }
+    }
+
+    normalized
 }
