@@ -1,71 +1,28 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { getCurrentUser, type UserResponseDto } from '@/lib/api/client';
+import {
+  getCurrentUser,
+  getMissions,
+  getParticipations,
+  getProjects,
+  type ProjectResponseDto,
+  type UserResponseDto
+} from '@/lib/api/client';
 import Button from '@/components/ui/Button';
 import Card, { CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/Card';
+import Badge from '@/components/ui/Badge';
 import Footer from '@/components/layout/Footer';
 import CTA from '@/components/layout/CTA';
-
-const popularProjects = [
-  {
-    id: '1',
-    title: 'Мониторинг птиц Москвы и Подмосковья',
-    description: 'Наблюдение за миграцией птиц в городских парках и пригородах столицы',
-    tags: ['Экология', 'Орнитология'],
-    status: 'active' as const,
-    tasksCount: 12,
-    participants: 156,
-  },
-  {
-    id: '2',
-    title: 'Фенологические наблюдения',
-    description: 'Отслеживание сезонных изменений в природе: цветение, листопад, прилёт птиц',
-    tags: ['Биология', 'Климат'],
-    status: 'active' as const,
-    tasksCount: 8,
-    participants: 89,
-  },
-  {
-    id: '3',
-    title: 'Качество воздуха в городах',
-    description: 'Сбор данных о загрязнении воздуха в различных районах городов России',
-    tags: ['Экология', 'Метеорология'],
-    status: 'active' as const,
-    tasksCount: 15,
-    participants: 234,
-  },
-  {
-    id: '4',
-    title: 'Наблюдение за звёздным небом',
-    description: 'Фиксирование астрономических явлений, метеоров и светового загрязнения',
-    tags: ['Астрономия'],
-    status: 'active' as const,
-    tasksCount: 6,
-    participants: 67,
-  },
-  {
-    id: '5',
-    title: 'Мониторинг водоёмов',
-    description: 'Исследование состояния рек и озёр: качество воды, флора и фауна',
-    tags: ['Экология', 'Биология'],
-    status: 'active' as const,
-    tasksCount: 10,
-    participants: 112,
-  },
-  {
-    id: '6',
-    title: 'Городская флора',
-    description: 'Изучение растений городских парков и скверов, их видовой состав',
-    tags: ['Биология', 'Экология'],
-    status: 'active' as const,
-    tasksCount: 7,
-    participants: 78,
-  },
-];
+interface PopularProject extends ProjectResponseDto {
+  tasksCount: number;
+  participantsCount: number;
+}
 
 export default function Home() {
   const [currentUser, setCurrentUser] = useState<UserResponseDto | null>(null);
+  const [popularProjects, setPopularProjects] = useState<PopularProject[]>([]);
+  const [isProjectsLoading, setIsProjectsLoading] = useState(true);
 
   useEffect(() => {
     const token = localStorage.getItem('auth_token');
@@ -76,6 +33,47 @@ export default function Home() {
           localStorage.removeItem('auth_token');
         });
     }
+  }, []);
+
+  useEffect(() => {
+    const loadPopularProjects = async () => {
+      try {
+        setIsProjectsLoading(true);
+        const projects = await getProjects();
+
+        const withStats = await Promise.all(
+          projects.map(async (project) => {
+            const [missions, participations] = await Promise.all([
+              getMissions(project.id).catch(() => []),
+              getParticipations(project.id).catch(() => []),
+            ]);
+
+            return {
+              ...project,
+              tasksCount: missions.length,
+              participantsCount: participations.length,
+            };
+          })
+        );
+
+        const sorted = withStats
+          .sort((a, b) => {
+            if (b.participantsCount !== a.participantsCount) {
+              return b.participantsCount - a.participantsCount;
+            }
+            return b.tasksCount - a.tasksCount;
+          })
+          .slice(0, 6);
+
+        setPopularProjects(sorted);
+      } catch {
+        setPopularProjects([]);
+      } finally {
+        setIsProjectsLoading(false);
+      }
+    };
+
+    void loadPopularProjects();
   }, []);
 
   return (
@@ -126,6 +124,12 @@ export default function Home() {
           </div>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {isProjectsLoading && (
+              <div className="md:col-span-2 lg:col-span-3 text-center py-10 text-muted-foreground">Загрузка проектов...</div>
+            )}
+            {!isProjectsLoading && popularProjects.length === 0 && (
+              <div className="md:col-span-2 lg:col-span-3 text-center py-10 text-muted-foreground">Проекты пока не добавлены.</div>
+            )}
             {popularProjects.map((project) => (
               <Link key={project.id} href={`/projects/${project.id}`}>
                 <Card variant="outlined" className="h-full hover:shadow-lg hover:border-primary/30 transition-all cursor-pointer group">
@@ -154,7 +158,7 @@ export default function Home() {
                     <div className="flex justify-between items-center w-full">
                       <span className="text-sm text-muted-foreground flex items-center gap-1">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                        {project.participants} участников
+                        {project.participantsCount} участников
                       </span>
                       <span className="text-primary text-sm font-medium group-hover:underline">
                         Подробнее →
@@ -173,18 +177,5 @@ export default function Home() {
 
       <Footer />
     </div>
-  );
-}
-
-function Badge({ variant, children }: { variant: 'success' | 'default' | 'outline', children: React.ReactNode }) {
-  const variants = {
-    success: 'bg-emerald-100 text-emerald-700',
-    default: 'bg-gray-100 text-gray-700',
-    outline: 'border border-gray-300 text-gray-700',
-  };
-  return (
-    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${variants[variant]}`}>
-      {children}
-    </span>
   );
 }

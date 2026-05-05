@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import Checkbox from '@/components/ui/Checkbox';
 import Card, { CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/Card';
 import { loginUser } from '@/lib/api/client';
 
@@ -12,6 +13,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -78,14 +80,13 @@ export default function LoginPage() {
               />
               
               <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2">
-                  <input 
-                    type="checkbox" 
-                    name="remember"
-                    className="rounded border-border text-primary focus:ring-primary"
-                  />
-                  <span className="text-sm text-muted-foreground">Запомнить меня</span>
-                </label>
+                <Checkbox
+                  name="remember"
+                  label="Запомнить меня"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="text-muted-foreground"
+                />
                 <Link 
                   href="/auth/forgot-password" 
                   className="text-sm text-primary hover:underline"

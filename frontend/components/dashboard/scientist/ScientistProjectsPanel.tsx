@@ -5,7 +5,15 @@ import Link from 'next/link';
 import Card, { CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
-import { getUserCreatedProjects, updateProject, ProjectResponseDto, UpdateProjectDto } from '@/lib/api/client';
+import {
+  getMissions,
+  getObservations,
+  getParticipations,
+  getUserCreatedProjects,
+  updateProject,
+  ProjectResponseDto,
+  UpdateProjectDto
+} from '@/lib/api/client';
 
 interface ProjectStats {
   tasks: number;
@@ -26,16 +34,33 @@ export default function ScientistProjectsPanel() {
   });
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  const enrichProjectsWithRealStats = async (projectsData: ProjectResponseDto[]) => {
+    return Promise.all(
+      projectsData.map(async (project) => {
+        const missions = await getMissions(project.id).catch(() => []);
+        const participants = await getParticipations(project.id).catch(() => []);
+
+        let reportsCount = 0;
+        for (const mission of missions) {
+          const observations = await getObservations(project.id, mission.id).catch(() => []);
+          reportsCount += observations.length;
+        }
+
+        return {
+          ...project,
+          tasks: missions.length,
+          participants: participants.length,
+          reports: reportsCount,
+        };
+      })
+    );
+  };
+
   useEffect(() => {
     const loadProjects = async () => {
       try {
         const data = await getUserCreatedProjects();
-        const projectsWithStats = data.map(p => ({
-          ...p,
-          tasks: p.tasks_count || 0,
-          participants: p.participants_count || Math.floor(Math.random() * 200) + 50,
-          reports: p.reports_count || Math.floor(Math.random() * 1000) + 100,
-        }));
+        const projectsWithStats = await enrichProjectsWithRealStats(data);
         setProjects(projectsWithStats);
       } catch (error) {
         console.error('Ошибка загрузки проектов:', error);
@@ -73,12 +98,7 @@ export default function ScientistProjectsPanel() {
       
       // Обновляем список проектов
       const data = await getUserCreatedProjects();
-      const projectsWithStats = data.map(p => ({
-        ...p,
-        tasks: p.tasks_count || Math.floor(Math.random() * 15) + 5,
-        participants: p.participants_count || Math.floor(Math.random() * 200) + 50,
-        reports: p.reports_count || Math.floor(Math.random() * 1000) + 100,
-      }));
+      const projectsWithStats = await enrichProjectsWithRealStats(data);
       setProjects(projectsWithStats);
       
       setMessage({ type: 'success', text: 'Проект успешно обновлён!' });
@@ -147,11 +167,11 @@ export default function ScientistProjectsPanel() {
               </span>
             </div>
           </CardContent>
-          <CardFooter className="flex gap-2">
-            <Link href={`/projects/${project.id}`} className="flex-1">
-              <Button variant="outline" className="w-full">Открыть</Button>
+          <CardFooter className="flex items-center gap-3">
+            <Link href={`/projects/${project.id}`} className="flex-1 min-w-0">
+              <Button variant="outline" className="w-full text-sm">Открыть</Button>
             </Link>
-            <Button variant="outline" className="flex-1" onClick={() => handleEditProject(project)}>
+            <Button variant="outline" className="flex-1 min-w-0 text-sm" onClick={() => handleEditProject(project)}>
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>

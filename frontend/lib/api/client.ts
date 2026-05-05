@@ -245,20 +245,33 @@ export async function deleteMission(projectId: string, missionId: string): Promi
 
 export interface CreateObservationDto {
   title: string;
-  description: string;
+  description?: string;
+  place?: string;
+}
+
+function getAuthHeadersWithoutContentType(): HeadersInit {
+  const token = getAuthToken();
+  const headers: HeadersInit = {};
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
 }
 
 export interface UpdateObservationDto {
   title?: string;
   description?: string;
+  place?: string;
   status?: string;
 }
 
 export interface ObservationFileDto {
   id: string;
   title: string;
-  type: string;
+  type?: string;
+  file_type?: string;
   url: string;
+  download_url?: string;
 }
 
 export interface ObservationCommentResponseDto {
@@ -277,6 +290,7 @@ export interface ObservationResponseDto {
   mission_id: string;
   title: string;
   description: string;
+  place?: string;
   status: string;
   files: ObservationFileDto[];
   comments?: ObservationCommentResponseDto[];
@@ -459,9 +473,40 @@ export interface UserObservationDto {
   missionTitle: string;
   title: string;
   description: string;
+  place?: string;
   status: string;
   files: ObservationFileDto[];
   created_at: string;
+}
+
+export async function getObservationFiles(projectId: string, missionId: string, obsId: string): Promise<ObservationFileDto[]> {
+  const response = await fetch(`${API_BASE_URL}/projects/${projectId}/missions/${missionId}/observations/${obsId}/files`, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+  return handleResponse(response);
+}
+
+export async function uploadObservationFile(
+  projectId: string,
+  missionId: string,
+  obsId: string,
+  file: File,
+  title?: string
+): Promise<ObservationFileDto> {
+  const formData = new FormData();
+  formData.append('file', file);
+  if (title?.trim()) {
+    formData.append('title', title.trim());
+  }
+
+  const response = await fetch(`${API_BASE_URL}/projects/${projectId}/missions/${missionId}/observations/${obsId}/files`, {
+    method: 'POST',
+    headers: getAuthHeadersWithoutContentType(),
+    body: formData,
+  });
+
+  return handleResponse(response);
 }
 
 export async function getUserObservations(): Promise<UserObservationDto[]> {
@@ -487,6 +532,7 @@ export async function getUserObservations(): Promise<UserObservationDto[]> {
               missionTitle: mission.title,
               title: obs.title,
               description: obs.description,
+              place: obs.place,
               status: obs.status,
               files: obs.files,
               created_at: obs.created_at,

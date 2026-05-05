@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Button from '@/components/ui/Button';
 import Card, { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
+import Checkbox from '@/components/ui/Checkbox';
 import {
   getCurrentUser,
   getMissions,
@@ -19,6 +20,7 @@ import {
   updateProject,
   UserResponseDto,
 } from '@/lib/api/client';
+import { buildMissionRequirements, parseMissionRequirements } from '@/lib/missionRequirements';
 
 function canManageProject(user: UserResponseDto | null, project: ProjectResponseDto | null): boolean {
   if (!user || !project) {
@@ -74,7 +76,14 @@ export default function ProjectDetailPage() {
   const [projectForm, setProjectForm] = useState({ title: '', description: '', tags: '', status: 'active' });
 
   const [editingMissionId, setEditingMissionId] = useState<string | null>(null);
-  const [missionForm, setMissionForm] = useState({ title: '', description: '', requirements: '', status: 'active' });
+  const [missionForm, setMissionForm] = useState({
+    title: '',
+    description: '',
+    requirements: '',
+    status: 'active',
+    requirePhoto: false,
+    requirePlace: false,
+  });
 
   const loadData = useCallback(async () => {
     try {
@@ -164,12 +173,15 @@ export default function ProjectDetailPage() {
   };
 
   const startMissionEdit = (mission: MissionResponseDto) => {
+    const parsed = parseMissionRequirements(mission.requirements);
     setEditingMissionId(mission.id);
     setMissionForm({
       title: mission.title,
       description: mission.description,
-      requirements: mission.requirements,
+      requirements: parsed.details,
       status: mission.status,
+      requirePhoto: parsed.requirePhoto,
+      requirePlace: parsed.requirePlace,
     });
   };
 
@@ -182,7 +194,7 @@ export default function ProjectDetailPage() {
       await updateMission(projectId, editingMissionId, {
         title: missionForm.title,
         description: missionForm.description,
-        requirements: missionForm.requirements,
+        requirements: buildMissionRequirements(missionForm.requirements, missionForm.requirePhoto, missionForm.requirePlace),
         status: missionForm.status,
       });
       setEditingMissionId(null);
@@ -312,7 +324,9 @@ export default function ProjectDetailPage() {
               {missions.length === 0 && <p className="text-muted-foreground">Задания пока не добавлены.</p>}
 
               <div className="space-y-4">
-                {missions.map((mission) => (
+                {missions.map((mission) => {
+                  const parsed = parseMissionRequirements(mission.requirements);
+                  return (
                   <div key={mission.id} className="p-4 rounded-lg border border-border space-y-3">
                     <div className="flex items-start justify-between gap-3">
                       <div>
@@ -321,7 +335,11 @@ export default function ProjectDetailPage() {
                       </div>
                       <Badge variant={mission.status === 'active' ? 'success' : 'default'}>{missionStatusLabel(mission.status)}</Badge>
                     </div>
-                    <p className="text-sm text-muted-foreground">Требования: {mission.requirements || 'Не указаны'}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {parsed.requirePhoto && <Badge variant="warning">Нужно фото</Badge>}
+                      {parsed.requirePlace && <Badge variant="warning">Нужно место</Badge>}
+                    </div>
+                    <p className="text-sm text-muted-foreground">Требования: {parsed.details || 'Не указаны'}</p>
 
                     {editingMissionId === mission.id ? (
                       <div className="space-y-3 pt-2">
@@ -339,6 +357,16 @@ export default function ProjectDetailPage() {
                           className="w-full px-4 py-3 rounded-lg border border-input min-h-[80px]"
                           value={missionForm.requirements}
                           onChange={(e) => setMissionForm((prev) => ({ ...prev, requirements: e.target.value }))}
+                        />
+                        <Checkbox
+                          label="Требуется фото"
+                          checked={missionForm.requirePhoto}
+                          onChange={(e) => setMissionForm((prev) => ({ ...prev, requirePhoto: e.target.checked }))}
+                        />
+                        <Checkbox
+                          label="Требуется место"
+                          checked={missionForm.requirePlace}
+                          onChange={(e) => setMissionForm((prev) => ({ ...prev, requirePlace: e.target.checked }))}
                         />
                         <div className="flex gap-2 justify-end">
                           <Button variant="outline" onClick={() => setEditingMissionId(null)}>Отмена</Button>
@@ -360,7 +388,8 @@ export default function ProjectDetailPage() {
                       </div>
                     )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </CardContent>
           </Card>

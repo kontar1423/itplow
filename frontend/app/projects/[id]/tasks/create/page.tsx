@@ -6,7 +6,9 @@ import Link from 'next/link';
 import Button from '@/components/ui/Button';
 import Card, { CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
+import Checkbox from '@/components/ui/Checkbox';
 import { createMission, CreateMissionDto, getCurrentUser, getProjectById } from '@/lib/api/client';
+import { buildMissionRequirements } from '@/lib/missionRequirements';
 
 export default function CreateTaskPage() {
   const params = useParams();
@@ -21,6 +23,8 @@ export default function CreateTaskPage() {
     title: '',
     description: '',
     requirements: '',
+    requirePhoto: false,
+    requirePlace: false,
   });
 
   useEffect(() => {
@@ -47,7 +51,7 @@ export default function CreateTaskPage() {
     const payload: CreateMissionDto = {
       title: formData.title,
       description: formData.description,
-      requirements: formData.requirements,
+      requirements: buildMissionRequirements(formData.requirements, formData.requirePhoto, formData.requirePlace),
       status: 'active',
     };
 
@@ -116,12 +120,26 @@ export default function CreateTaskPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Требования к отчету</label>
+                  <label className="text-sm font-medium text-foreground">Подробные требования</label>
                   <textarea
                     className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary min-h-[100px]"
-                    placeholder="Например: текст наблюдения, ссылка на фото, место"
+                    placeholder="Например: какие данные нужно описать в наблюдении"
                     value={formData.requirements}
                     onChange={(e) => setFormData((prev) => ({ ...prev, requirements: e.target.value }))}
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-foreground">Обязательные поля отчета</label>
+                  <Checkbox
+                    label="Требуется фото"
+                    checked={formData.requirePhoto}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, requirePhoto: e.target.checked }))}
+                  />
+                  <Checkbox
+                    label="Требуется место"
+                    checked={formData.requirePlace}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, requirePlace: e.target.checked }))}
                   />
                 </div>
               </CardContent>
