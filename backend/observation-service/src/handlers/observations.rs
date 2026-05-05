@@ -1,12 +1,18 @@
-use actix_web::{HttpResponse, web};
+use actix_multipart::Multipart;
+use actix_web::{Either, HttpResponse, web};
+use bytes::BytesMut;
 use chrono::Utc;
+use futures_util::TryStreamExt;
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
 
 use crate::{AppState, errors::AppError, middleware::auth::AuthenticatedUser, project_client};
 
-use super::{comments::ObservationCommentRecord, files::ObservationFileRecord};
+use super::{
+    comments::ObservationCommentRecord,
+    files::{ObservationFileRecord, ObservationFileResponse},
+};
 
 #[derive(Debug, Deserialize)]
 pub struct CreateObservationDto {
@@ -41,6 +47,25 @@ pub struct ObservationDetails {
     pub observation: ObservationRecord,
     pub comments: Vec<ObservationCommentRecord>,
     pub files: Vec<ObservationFileRecord>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CreatedObservationDetails {
+    #[serde(flatten)]
+    pub observation: ObservationRecord,
+    pub comments: Vec<ObservationCommentRecord>,
+    pub files: Vec<ObservationFileResponse>,
+}
+
+struct CreateObservationMultipart {
+    observation: CreateObservationDto,
+    file: Option<MultipartFile>,
+}
+
+struct MultipartFile {
+    title: String,
+    file_type: String,
+    bytes: bytes::Bytes,
 }
 
 pub async fn list_observations(
@@ -86,10 +111,25 @@ pub async fn create_observation(
     state: web::Data<AppState>,
     auth: AuthenticatedUser,
     path: web::Path<(Uuid, Uuid)>,
-    payload: web::Json<CreateObservationDto>,
+    payload: Either<web::Json<CreateObservationDto>, Multipart>,
 ) -> Result<HttpResponse, AppError> {
     let (project_id, mission_id) = path.into_inner();
     project_client::ensure_mission_in_project(&state, project_id, mission_id).await?;
+
+    let (payload, file) = match payload {
+        Either::Left(json) => (json.into_inner(), None),
+        Either::Right(multipart) => {
+            let parsed = parse_create_observation_multipart(multipart).await?;
+            (parsed.observation, parsed.file)
+        }
+    };
+
+    let title = payload.title.trim();
+    if title.is_empty() {
+        return Err(AppError::BadRequest(
+            "Observation title is required".to_string(),
+        ));
+    }
 
     let row = sqlx::query_as::<_, ObservationRecord>(
         r#"
@@ -100,7 +140,7 @@ pub async fn create_observation(
     )
     .bind(auth.user_id)
     .bind(mission_id)
-    .bind(payload.title.trim())
+    .bind(title)
     .bind(payload.description.as_deref())
     .bind(payload.place.as_deref())
     .fetch_one(&state.db)
@@ -113,7 +153,101 @@ pub async fn create_observation(
         auth.user_id
     );
 
-    Ok(HttpResponse::Created().json(row))
+    let mut files = Vec::new();
+    if let Some(file) = file {
+        let uploaded = super::files::create_file_record(
+            &state,
+            row.id,
+            file.title,
+            file.file_type,
+            file.bytes,
+        )
+        .await?;
+        files.push(uploaded);
+    }
+
+    Ok(HttpResponse::Created().json(CreatedObservationDetails {
+        observation: row,
+        comments: Vec::new(),
+        files,
+    }))
+}
+
+async fn parse_create_observation_multipart(
+    mut payload: Multipart,
+) -> Result<CreateObservationMultipart, AppError> {
+    let mut title: Option<String> = None;
+    let mut description: Option<String> = None;
+    let mut place: Option<String> = None;
+    let mut file_title: Option<String> = None;
+    let mut file_name: Option<String> = None;
+    let mut file_type = "application/octet-stream".to_string();
+    let mut file_bytes = BytesMut::new();
+
+    while let Some(mut field) = payload.try_next().await? {
+        let field_name = field.name().unwrap_or_default().to_string();
+
+        if field_name == "file" {
+            if let Some(disposition) = field.content_disposition() {
+                if let Some(filename) = disposition.get_filename() {
+                    file_name = Some(filename.to_string());
+                }
+            }
+            if let Some(content_type) = field.content_type() {
+                file_type = content_type.to_string();
+            }
+            while let Some(chunk) = field.try_next().await? {
+                file_bytes.extend_from_slice(&chunk);
+            }
+            continue;
+        }
+
+        let value = read_text_field(&mut field).await?;
+        match field_name.as_str() {
+            "title" => title = Some(value),
+            "description" => description = non_empty(value),
+            "place" => place = non_empty(value),
+            "file_title" => file_title = non_empty(value),
+            _ => {}
+        }
+    }
+
+    let title =
+        title.ok_or_else(|| AppError::BadRequest("Field `title` is required".to_string()))?;
+    let file = if file_bytes.is_empty() {
+        None
+    } else {
+        Some(MultipartFile {
+            title: file_title
+                .or(file_name)
+                .unwrap_or_else(|| format!("file-{}", Uuid::new_v4())),
+            file_type,
+            bytes: file_bytes.freeze(),
+        })
+    };
+
+    Ok(CreateObservationMultipart {
+        observation: CreateObservationDto {
+            title,
+            description,
+            place,
+        },
+        file,
+    })
+}
+
+async fn read_text_field(
+    field: &mut actix_multipart::Field,
+) -> Result<String, actix_multipart::MultipartError> {
+    let mut value = BytesMut::new();
+    while let Some(chunk) = field.try_next().await? {
+        value.extend_from_slice(&chunk);
+    }
+    Ok(String::from_utf8_lossy(&value).trim().to_string())
+}
+
+fn non_empty(value: String) -> Option<String> {
+    if value.is_empty() { None } else { Some(value) }
 }
 
 pub async fn update_observation(

@@ -19,6 +19,8 @@ use errors::AppError;
 use jsonwebtoken::{DecodingKey, Validation, decode};
 use serde::{Deserialize, Serialize};
 
+const MAX_REQUEST_SIZE: usize = 20 * 1024 * 1024;
+
 #[derive(Clone)]
 struct AppState {
     config: Config,
@@ -83,6 +85,7 @@ async fn main() -> io::Result<()> {
             .wrap(Logger::default())
             .wrap(cors)
             .app_data(state.clone())
+            .app_data(web::PayloadConfig::new(MAX_REQUEST_SIZE))
             .route("/health", web::get().to(health))
             .default_service(web::to(proxy))
     })

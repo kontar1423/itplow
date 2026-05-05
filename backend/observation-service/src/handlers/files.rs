@@ -90,11 +90,37 @@ pub async fn upload_file(
         .or(file_name)
         .unwrap_or_else(|| format!("file-{}", Uuid::new_v4()));
 
+    let response = create_file_record(
+        &state,
+        observation_id,
+        title,
+        file_type,
+        file_bytes.freeze(),
+    )
+    .await?;
+
+    log::info!(
+        "file uploaded: id={}, observation_id={}, actor_id={}",
+        response.id,
+        observation_id,
+        auth.user_id
+    );
+
+    Ok(HttpResponse::Created().json(response))
+}
+
+pub async fn create_file_record(
+    state: &AppState,
+    observation_id: Uuid,
+    title: String,
+    file_type: String,
+    file_bytes: bytes::Bytes,
+) -> Result<ObservationFileResponse, AppError> {
     let (object_key, url) = upload_to_storage(
         &state.storage,
         observation_id,
         &title,
-        file_bytes.freeze(),
+        file_bytes,
         &file_type,
     )
     .await?;
@@ -113,14 +139,7 @@ pub async fn upload_file(
     .fetch_one(&state.db)
     .await?;
 
-    log::info!(
-        "file uploaded: id={}, observation_id={}, actor_id={}",
-        row.id,
-        observation_id,
-        auth.user_id
-    );
-
-    Ok(HttpResponse::Created().json(to_response(&state.storage, row).await?))
+    to_response(&state.storage, row).await
 }
 
 pub async fn list_files(

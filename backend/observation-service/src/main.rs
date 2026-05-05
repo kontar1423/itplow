@@ -19,6 +19,8 @@ use serde::Serialize;
 use sqlx::PgPool;
 use storage::Storage;
 
+const MAX_UPLOAD_SIZE: usize = 20 * 1024 * 1024;
+
 #[derive(Clone)]
 pub struct AppState {
     pub config: Config,
@@ -70,6 +72,7 @@ async fn main() -> io::Result<()> {
         App::new()
             .wrap(Logger::default())
             .app_data(state.clone())
+            .app_data(web::PayloadConfig::new(MAX_UPLOAD_SIZE))
             .route("/health", web::get().to(health))
             .service(
                 web::scope("/projects/{project_id}/missions/{mission_id}/observations")

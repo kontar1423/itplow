@@ -148,6 +148,32 @@ Observation содержит:
 - `status`
 - файлы и комментарии
 
+`POST /projects/:project_id/missions/:mission_id/observations` поддерживает два формата:
+
+- `application/json` — создание отчёта без файла:
+
+```json
+{
+  "title": "Наблюдение в парке",
+  "description": "Описание результата",
+  "place": "Москва, парк Сокольники"
+}
+```
+
+- `multipart/form-data` — создание отчёта и загрузка файла одним запросом:
+
+```text
+title=Наблюдение в парке
+description=Описание результата
+place=Москва, парк Сокольники
+file=<binary>
+file_title=photo.jpg
+```
+
+Поле `file_title` необязательное: если его нет, сервис использует имя файла из multipart-запроса. Отдельный `POST /projects/:project_id/missions/:mission_id/observations/:obs_id/files` остаётся доступен для добавления файла к уже созданному отчёту.
+
+Файлы не хранятся в PostgreSQL как бинарные данные. `observation-service` загружает файл в MinIO bucket `observations`, а в таблицу `observation_files` сохраняет метаданные: `title`, `file_type`, `url`, `object_key`. В ответах API для файлов возвращается `download_url` — временная presigned-ссылка для отображения или скачивания файла на фронтенде.
+
 ## Технические детали
 
 - миграции запускаются автоматически при старте каждого сервиса через `sqlx::migrate!`
@@ -155,6 +181,7 @@ Observation содержит:
 - `project-service` публикует `project.created` и `mission.created`
 - `project-service` хранит теги проектов в отдельной таблице `tags`, связанной с `projects` по `project_id`
 - `observation-service` создаёт bucket в MinIO при старте, если его ещё нет
+- gateway, `observation-service` и nginx принимают загрузки файлов до `20 MB`
 
 ## Проверка
 
