@@ -91,6 +91,10 @@ async fn main() -> io::Result<()> {
                     )
                     .route(
                         "/{obs_id}",
+                        web::patch().to(handlers::observations::update_observation),
+                    )
+                    .route(
+                        "/{obs_id}",
                         web::delete().to(handlers::observations::delete_observation),
                     )
                     .route(
@@ -112,6 +116,10 @@ async fn main() -> io::Result<()> {
                             .route(
                                 "/{comment_id}",
                                 web::put().to(handlers::comments::update_comment),
+                            )
+                            .route(
+                                "/{comment_id}",
+                                web::patch().to(handlers::comments::update_comment),
                             )
                             .route(
                                 "/{comment_id}",

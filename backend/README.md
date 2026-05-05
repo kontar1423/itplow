@@ -132,10 +132,12 @@ Project содержит:
 - `GET /projects/:project_id/missions/:mission_id/observations/:obs_id`
 - `POST /projects/:project_id/missions/:mission_id/observations`
 - `PUT /projects/:project_id/missions/:mission_id/observations/:obs_id`
+- `PATCH /projects/:project_id/missions/:mission_id/observations/:obs_id`
 - `DELETE /projects/:project_id/missions/:mission_id/observations/:obs_id`
 - `GET /projects/:project_id/missions/:mission_id/observations/:obs_id/comments`
 - `POST /projects/:project_id/missions/:mission_id/observations/:obs_id/comments`
 - `PUT /projects/:project_id/missions/:mission_id/observations/:obs_id/comments/:comment_id`
+- `PATCH /projects/:project_id/missions/:mission_id/observations/:obs_id/comments/:comment_id`
 - `DELETE /projects/:project_id/missions/:mission_id/observations/:obs_id/comments/:comment_id`
 - `GET /projects/:project_id/missions/:mission_id/observations/:obs_id/files`
 - `POST /projects/:project_id/missions/:mission_id/observations/:obs_id/files`
