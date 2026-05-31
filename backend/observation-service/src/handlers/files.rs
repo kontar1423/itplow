@@ -9,6 +9,28 @@ use uuid::Uuid;
 
 use crate::{AppState, errors::AppError, middleware::auth::AuthenticatedUser, storage::Storage};
 
+const ALLOWED_MIME_TYPES: &[&str] = &[
+    "image/jpeg",
+    "image/png",
+    "image/gif",
+    "image/webp",
+    "image/heic",
+    "image/heif",
+    "video/mp4",
+    "video/quicktime",
+    "video/webm",
+    "audio/mpeg",
+    "audio/wav",
+    "audio/ogg",
+    "application/pdf",
+    "text/plain",
+];
+
+pub fn is_allowed_mime_type(mime: &str) -> bool {
+    let base = mime.split(';').next().unwrap_or(mime).trim();
+    ALLOWED_MIME_TYPES.contains(&base)
+}
+
 #[derive(Debug, Serialize, Deserialize, FromRow, Clone)]
 pub struct ObservationFileRecord {
     pub id: Uuid,
@@ -84,6 +106,13 @@ pub async fn upload_file(
         return Err(AppError::BadRequest(
             "Multipart field `file` is required".to_string(),
         ));
+    }
+
+    if !is_allowed_mime_type(&file_type) {
+        return Err(AppError::BadRequest(format!(
+            "File type '{}' is not allowed",
+            file_type
+        )));
     }
 
     let title = title

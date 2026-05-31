@@ -11,7 +11,7 @@ use crate::{AppState, errors::AppError, middleware::auth::AuthenticatedUser, pro
 
 use super::{
     comments::ObservationCommentRecord,
-    files::{ObservationFileRecord, ObservationFileResponse},
+    files::{ObservationFileRecord, ObservationFileResponse, is_allowed_mime_type},
 };
 
 #[derive(Debug, Deserialize)]
@@ -217,6 +217,12 @@ async fn parse_create_observation_multipart(
     let file = if file_bytes.is_empty() {
         None
     } else {
+        if !is_allowed_mime_type(&file_type) {
+            return Err(AppError::BadRequest(format!(
+                "File type '{}' is not allowed",
+                file_type
+            )));
+        }
         Some(MultipartFile {
             title: file_title
                 .or(file_name)
