@@ -23,7 +23,6 @@ export default function AboutPage() {
   
   return (
     <div className="min-h-screen">
-      {/* Hero */}
       <div className="bg-[#f0fdf4] py-16">
         <div className="container-custom">
           <div className="max-w-3xl mx-auto text-center">
@@ -37,7 +36,6 @@ export default function AboutPage() {
         </div>
       </div>
 
-      {/* Что такое гражданская наука */}
       <div className="py-16">
         <div className="container-custom">
           <div className="max-w-4xl mx-auto">
@@ -62,7 +60,6 @@ export default function AboutPage() {
         </div>
       </div>
 
-      {/* Как это работает */}
       <div className="py-16">
         <div className="container-custom">
           <h2 className="text-2xl font-bold text-foreground mb-10 text-center">
@@ -125,7 +122,6 @@ export default function AboutPage() {
         </div>
       </div>
 
-      {/* Роли */}
       <div className="py-16">
         <div className="container-custom">
           <h2 className="text-2xl font-bold text-foreground mb-10 text-center">
@@ -214,7 +210,6 @@ export default function AboutPage() {
         </div>
       </div>
 
-      {/* Преимущества */}
       <div className="py-16">
         <div className="container-custom">
           <h2 className="text-2xl font-bold text-foreground mb-10 text-center">
@@ -268,7 +263,6 @@ export default function AboutPage() {
         </div>
       </div>
 
-      {/* Категории проектов */}
       <div className="py-16">
         <div className="container-custom">
           <h2 className="text-2xl font-bold text-foreground mb-10 text-center">
@@ -301,7 +295,6 @@ export default function AboutPage() {
         </div>
       </div>
 
-      {/* FAQ */}
       <div className="py-16">
         <div className="container-custom">
           <h2 className="text-2xl font-bold text-foreground mb-10 text-center">
@@ -345,7 +338,6 @@ export default function AboutPage() {
         </div>
       </div>
 
-      {/* CTA - only show if user is not logged in */}
       <CTA isVisible={!currentUser} />
 
       <Footer />

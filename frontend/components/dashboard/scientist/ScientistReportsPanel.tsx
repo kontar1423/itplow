@@ -138,7 +138,6 @@ export default function ScientistReportsPanel() {
       try {
         await updateObservation(report.projectId, report.missionId, report.id, { status: newStatus });
       } catch (primaryError) {
-        // Fallback: если missionId в карточке не совпал с observation, ищем корректную миссию проекта.
         const missions = await getMissions(report.projectId).catch(() => []);
         let updated = false;
 
@@ -148,7 +147,6 @@ export default function ScientistReportsPanel() {
             updated = true;
             break;
           } catch {
-            // Продолжаем искать корректную миссию
           }
         }
 
@@ -330,7 +328,6 @@ export default function ScientistReportsPanel() {
           const files = await getObservationFiles(report.projectId, mission.id, report.id);
           return files;
         } catch {
-          // ищем дальше
         }
       }
       return [];

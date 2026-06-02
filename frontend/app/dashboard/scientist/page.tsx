@@ -86,7 +86,7 @@ export default function ScientistDashboardPage() {
           </div>
         </aside>
 
-        <main className="flex-1 p-4 md:p-8">
+        <main className="min-w-0 flex-1 p-3 sm:p-4 md:p-8">
           <div className="mb-6 lg:hidden">
             <div className="flex items-center gap-3 rounded-2xl border border-border bg-white p-4 shadow-sm">
               <Avatar fallback={userName} size="md" />
@@ -97,17 +97,15 @@ export default function ScientistDashboardPage() {
             </div>
           </div>
 
-          <div className="mb-6 overflow-x-auto lg:hidden">
-            <div className="flex min-w-max gap-2">
-              <button type="button" onClick={() => setActiveTab('projects')} className={`rounded-full px-4 py-2 text-sm font-medium ${activeTab === 'projects' ? 'bg-primary text-white' : 'bg-white text-foreground border border-border'}`}>Мои проекты</button>
-              <button type="button" onClick={() => setActiveTab('reports')} className={`rounded-full px-4 py-2 text-sm font-medium ${activeTab === 'reports' ? 'bg-primary text-white' : 'bg-white text-foreground border border-border'}`}>Отчёты</button>
-              <button type="button" onClick={() => setActiveTab('profile')} className={`rounded-full px-4 py-2 text-sm font-medium ${activeTab === 'profile' ? 'bg-primary text-white' : 'bg-white text-foreground border border-border'}`}>Профиль</button>
-              <button type="button" onClick={() => setActiveTab('settings')} className={`rounded-full px-4 py-2 text-sm font-medium ${activeTab === 'settings' ? 'bg-primary text-white' : 'bg-white text-foreground border border-border'}`}>Настройки</button>
-            </div>
+          <div className="mb-6 grid grid-cols-2 gap-2 lg:hidden">
+            <button type="button" onClick={() => setActiveTab('projects')} className={`rounded-2xl px-3 py-3 text-sm font-medium ${activeTab === 'projects' ? 'bg-primary text-white' : 'border border-border bg-white text-foreground'}`}>Мои проекты</button>
+            <button type="button" onClick={() => setActiveTab('reports')} className={`rounded-2xl px-3 py-3 text-sm font-medium ${activeTab === 'reports' ? 'bg-primary text-white' : 'border border-border bg-white text-foreground'}`}>Отчёты</button>
+            <button type="button" onClick={() => setActiveTab('profile')} className={`rounded-2xl px-3 py-3 text-sm font-medium ${activeTab === 'profile' ? 'bg-primary text-white' : 'border border-border bg-white text-foreground'}`}>Профиль</button>
+            <button type="button" onClick={() => setActiveTab('settings')} className={`rounded-2xl px-3 py-3 text-sm font-medium ${activeTab === 'settings' ? 'bg-primary text-white' : 'border border-border bg-white text-foreground'}`}>Настройки</button>
           </div>
 
           <div className="mb-8">
-            <h1 className="text-2xl font-bold text-foreground mb-2">
+            <h1 className="mb-2 text-xl font-bold text-foreground sm:text-2xl">
               {activeTab === 'projects' && 'Мои проекты'}
               {activeTab === 'reports' && 'Отчеты'}
               {activeTab === 'profile' && 'Профиль'}
@@ -130,24 +128,24 @@ export default function ScientistDashboardPage() {
           )}
 
           {activeTab === 'reports' && <ScientistReportsPanel />}
-          {activeTab === 'profile' && <ProfilePanel className="max-w-2xl" />}
+          {activeTab === 'profile' && <ProfilePanel className="w-full max-w-2xl" />}
 
           {activeTab === 'settings' && (
-            <div className="space-y-6 max-w-2xl">
+            <div className="w-full max-w-2xl space-y-6">
               <Card variant="outlined">
                 <CardHeader>
                   <CardTitle>Уведомления</CardTitle>
                   <CardDescription>Настройка уведомлений</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <label className="flex items-center justify-between">
+                  <label className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <div className="font-medium text-foreground">Email-уведомления</div>
                       <div className="text-sm text-muted-foreground">Получать новости на email</div>
                     </div>
                     <input type="checkbox" defaultChecked className="toggle" />
                   </label>
-                  <label className="flex items-center justify-between">
+                  <label className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <div className="font-medium text-foreground">Уведомления о новых отчетах</div>
                       <div className="text-sm text-muted-foreground">Получать уведомления о новых отчетах</div>

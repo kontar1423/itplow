@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useState, useSyncExternalStore } from 'react';
+import { useSyncExternalStore } from 'react';
 
 const checkAuth = (): boolean => {
   if (typeof window === 'undefined') {
@@ -33,7 +33,6 @@ const subscribeAuth = (callback: () => void) => {
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const isLoggedIn = useSyncExternalStore(
     typeof window === 'undefined' ? emptySubscribe : subscribeAuth,
@@ -57,7 +56,7 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-[#a7f3d0] bg-[#a7f3d0]">
       <div className="container-custom">
-        <div className="flex min-h-16 items-center justify-between gap-3 py-3">
+        <div className="flex min-h-16 flex-wrap items-center justify-between gap-3 py-3">
           <Link href="/" className="flex items-center gap-2">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-white">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -112,74 +111,51 @@ export default function Header() {
             )}
           </div>
 
-          <button
-            type="button"
-            className="inline-flex items-center justify-center rounded-lg border border-primary/30 bg-white/80 p-2 text-primary md:hidden"
-            onClick={() => setIsMobileMenuOpen((current) => !current)}
-            aria-label="Открыть меню"
-            aria-expanded={isMobileMenuOpen}
-          >
-            {isMobileMenuOpen ? (
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
+          <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-2 md:hidden">
+            <Link
+              href="/projects"
+              className={`text-sm font-medium transition-colors ${
+                pathname === '/projects' ? 'text-primary' : 'text-muted-foreground'
+              }`}
+            >
+              Проекты
+            </Link>
+            <Link
+              href="/about"
+              className={`text-sm font-medium transition-colors ${
+                pathname === '/about' ? 'text-primary' : 'text-muted-foreground'
+              }`}
+            >
+              О платформе
+            </Link>
+            {isLoggedIn ? (
+              <>
+                <Link
+                  href="/dashboard"
+                  className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-primary-hover"
+                >
+                  Профиль
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="text-xs font-medium text-muted-foreground transition-colors hover:text-primary"
+                >
+                  Выйти
+                </button>
+              </>
             ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="4" y1="12" x2="20" y2="12" />
-                <line x1="4" y1="6" x2="20" y2="6" />
-                <line x1="4" y1="18" x2="20" y2="18" />
-              </svg>
+              <>
+                <Link href="/auth/login" className="text-xs font-medium text-muted-foreground transition-colors hover:text-primary">
+                  Войти
+                </Link>
+                <Link href="/auth/register" className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-primary-hover">
+                  Регистрация
+                </Link>
+              </>
             )}
-          </button>
-        </div>
-
-        {isMobileMenuOpen && (
-          <div className="pb-4 md:hidden">
-            <div className="rounded-2xl border border-primary/15 bg-white/95 p-4 shadow-sm">
-              <nav className="flex flex-col gap-2">
-                {navLinks.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                      pathname === link.href ? 'bg-primary text-white' : 'text-foreground hover:bg-primary/5'
-                    }`}
-                  >
-                    {link.label}
-                  </Link>
-                ))}
-              </nav>
-
-              <div className="mt-4 flex flex-col gap-2">
-                {isLoggedIn ? (
-                  <>
-                    <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="rounded-lg bg-primary px-4 py-2 text-center text-sm font-medium text-white">
-                      Профиль
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={handleLogout}
-                      className="rounded-lg border border-primary/20 px-4 py-2 text-sm font-medium text-foreground"
-                    >
-                      Выйти
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <Link href="/auth/login" onClick={() => setIsMobileMenuOpen(false)} className="rounded-lg border border-primary/20 px-4 py-2 text-center text-sm font-medium text-foreground">
-                      Войти
-                    </Link>
-                    <Link href="/auth/register" onClick={() => setIsMobileMenuOpen(false)} className="rounded-lg bg-primary px-4 py-2 text-center text-sm font-medium text-white">
-                      Регистрация
-                    </Link>
-                  </>
-                )}
-              </div>
-            </div>
           </div>
-        )}
+        </div>
       </div>
     </header>
   );
