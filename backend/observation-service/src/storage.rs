@@ -66,7 +66,17 @@ impl Storage {
         bytes: Bytes,
         content_type: &str,
     ) -> Result<(String, String), AppError> {
-        let key = format!("{observation_id}/{}-{title}", Uuid::new_v4());
+        let safe_title: String = title
+            .chars()
+            .map(|c| {
+                if c.is_alphanumeric() || matches!(c, '-' | '_' | '.') {
+                    c
+                } else {
+                    '_'
+                }
+            })
+            .collect();
+        let key = format!("{observation_id}/{}-{safe_title}", Uuid::new_v4());
         let body = ByteStream::from(bytes);
 
         self.client

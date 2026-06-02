@@ -173,6 +173,7 @@ pub async fn create_file_record(
 
 pub async fn list_files(
     state: web::Data<AppState>,
+    _auth: AuthenticatedUser,
     path: web::Path<(Uuid, Uuid, Uuid)>,
 ) -> Result<HttpResponse, AppError> {
     let (project_id, mission_id, observation_id) = path.into_inner();
@@ -184,10 +185,11 @@ pub async fn list_files(
     )
     .await?;
     let rows = fetch_files(&state, observation_id).await?;
-    let mut response = Vec::with_capacity(rows.len());
-    for row in rows {
-        response.push(to_response(&state.storage, row).await?);
-    }
+    let storage = &state.storage;
+    let response = futures_util::future::try_join_all(
+        rows.into_iter().map(|row| to_response(storage, row)),
+    )
+    .await?;
     Ok(HttpResponse::Ok().json(response))
 }
 

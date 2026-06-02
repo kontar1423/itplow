@@ -270,14 +270,10 @@ pub async fn delete_project(
 ) -> Result<HttpResponse, AppError> {
     let project_id = path.into_inner();
     ensure_project_access(&state, &auth, project_id).await?;
-    let result = sqlx::query("DELETE FROM projects WHERE id = $1")
+    sqlx::query("DELETE FROM projects WHERE id = $1")
         .bind(project_id)
         .execute(&state.db)
         .await?;
-
-    if result.rows_affected() == 0 {
-        return Err(AppError::NotFound("Project not found".to_string()));
-    }
 
     log::info!(
         "project deleted: id={}, actor_id={}",

@@ -1,7 +1,6 @@
 use std::{future::Future, pin::Pin};
 
 use actix_web::{FromRequest, HttpRequest, dev::Payload, http::header, web};
-use chrono::Utc;
 use jsonwebtoken::{DecodingKey, Validation, decode};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -56,9 +55,6 @@ impl FromRequest for AuthenticatedUser {
                 .ok_or_else(|| AppError::Unauthorized("Bearer token is missing".to_string()))?;
 
             let claims = decode_token(token, &state.config.jwt_secret)?;
-            if claims.exp <= Utc::now().timestamp() as usize {
-                return Err(AppError::Unauthorized("Token has expired".to_string()).into());
-            }
 
             let stored_user = session_user_id(state.get_ref(), token).await?;
             let user_id = stored_user

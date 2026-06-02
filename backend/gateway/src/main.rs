@@ -12,7 +12,6 @@ use actix_web::{
     web,
 };
 use bytes::Bytes;
-use chrono::Utc;
 use config::Config;
 use env_logger::Env;
 use errors::AppError;
@@ -38,7 +37,6 @@ struct HealthResponse {
 struct Claims {
     sub: String,
     role: String,
-    exp: usize,
 }
 
 #[actix_web::main]
@@ -140,7 +138,8 @@ async fn proxy(
     let mut builder = state.client.request(method, url).body(body.clone());
 
     for (name, value) in req.headers() {
-        if name == header::HOST {
+        let lower = name.as_str().to_ascii_lowercase();
+        if name == header::HOST || lower == "x-user-id" || lower == "x-user-role" {
             continue;
         }
         builder = builder.header(name.as_str(), value.as_bytes());
@@ -224,10 +223,6 @@ async fn validate_token(state: &AppState, req: &HttpRequest) -> Result<Claims, A
         &Validation::default(),
     )?
     .claims;
-
-    if claims.exp <= Utc::now().timestamp() as usize {
-        return Err(AppError::Unauthorized("Token has expired".to_string()));
-    }
 
     let mut conn = state.redis.get_multiplexed_async_connection().await?;
     let stored_user_id: Option<String> = conn.get(format!("session:{token}")).await?;

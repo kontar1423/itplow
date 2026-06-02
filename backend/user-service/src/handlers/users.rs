@@ -85,6 +85,11 @@ pub async fn register(
             "Password must contain at least 6 characters".to_string(),
         ));
     }
+    if payload.password.len() > 72 {
+        return Err(AppError::BadRequest(
+            "Password must not exceed 72 characters".to_string(),
+        ));
+    }
 
     let role = payload
         .role
