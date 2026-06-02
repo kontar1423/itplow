@@ -178,6 +178,8 @@ fn is_public_route(method: &Method, path: &str) -> bool {
     (method == Method::POST && path == "/api/users")
         || (method == Method::POST && path == "/api/auth/login")
         || path == "/health"
+        || (method == Method::GET && path == "/api/projects")
+        || (method == Method::GET && path.starts_with("/api/projects/"))
 }
 
 fn resolve_target<'a>(config: &'a Config, path: &str) -> Result<&'a str, AppError> {
