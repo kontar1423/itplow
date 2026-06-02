@@ -549,7 +549,7 @@ export async function getUserObservations(): Promise<UserObservationDto[]> {
               description: obs.description,
               place: obs.place,
               status: obs.status,
-              files: obs.files,
+              files: obs.files || [],
               created_at: obs.created_at,
             });
           }
