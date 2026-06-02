@@ -1,0 +1,174 @@
+services:
+  users-db:
+    image: postgres:16-alpine
+    container_name: itplow-users-db
+    environment:
+      POSTGRES_DB: users_db
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    ports:
+      - "5433:5432"
+    volumes:
+      - users-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d users_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  projects-db:
+    image: postgres:16-alpine
+    container_name: itplow-projects-db
+    environment:
+      POSTGRES_DB: projects_db
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    ports:
+      - "5434:5432"
+    volumes:
+      - projects-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d projects_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  observations-db:
+    image: postgres:16-alpine
+    container_name: itplow-observations-db
+    environment:
+      POSTGRES_DB: observations_db
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    ports:
+      - "5435:5432"
+    volumes:
+      - observations-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d observations_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: itplow-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    container_name: itplow-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?MINIO_ROOT_USER is required}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD is required}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+
+  user-service:
+    build:
+      context: .
+      dockerfile: user-service/Dockerfile
+    container_name: itplow-user-service
+    environment:
+      APP_HOST: 0.0.0.0
+      APP_PORT: 8081
+      RUST_LOG: info,actix_web=info
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@users-db:5432/users_db
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      JWT_TTL_SECONDS: ${JWT_TTL_SECONDS:-86400}
+      PROJECT_SERVICE_URL: http://project-service:8082
+    depends_on:
+      users-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  project-service:
+    build:
+      context: .
+      dockerfile: project-service/Dockerfile
+    container_name: itplow-project-service
+    environment:
+      APP_HOST: 0.0.0.0
+      APP_PORT: 8082
+      RUST_LOG: info,actix_web=info
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@projects-db:5432/projects_db
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      JWT_TTL_SECONDS: ${JWT_TTL_SECONDS:-86400}
+    depends_on:
+      projects-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  observation-service:
+    build:
+      context: .
+      dockerfile: observation-service/Dockerfile
+    container_name: itplow-observation-service
+    environment:
+      APP_HOST: 0.0.0.0
+      APP_PORT: 8083
+      RUST_LOG: info,actix_web=info
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@observations-db:5432/observations_db
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      JWT_TTL_SECONDS: ${JWT_TTL_SECONDS:-86400}
+      PROJECT_SERVICE_URL: http://project-service:8082
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_REGION: ${MINIO_REGION:-us-east-1}
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:?MINIO_ROOT_USER is required}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD is required}
+      MINIO_BUCKET: ${MINIO_BUCKET:-observations}
+    depends_on:
+      observations-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+
+  gateway:
+    build:
+      context: .
+      dockerfile: gateway/Dockerfile
+    container_name: itplow-gateway
+    environment:
+      APP_HOST: 0.0.0.0
+      APP_PORT: 8080
+      RUST_LOG: info,actix_web=info
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000,http://[::]:3000}
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      USER_SERVICE_URL: http://user-service:8081
+      PROJECT_SERVICE_URL: http://project-service:8082
+      OBSERVATION_SERVICE_URL: http://observation-service:8083
+    depends_on:
+      redis:
+        condition: service_healthy
+      user-service:
+        condition: service_started
+      project-service:
+        condition: service_started
+      observation-service:
+        condition: service_started
+    ports:
+      - "8080:8080"
+
+volumes:
+  users-db-data:
+  projects-db-data:
+  observations-db-data:
+  minio-data:

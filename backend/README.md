@@ -1,202 +1,200 @@
-# API endpoints documentation
+# itplow backend
 
-## Пользователи (`/api/users`)
+Микросервисный backend для платформы проектов гражданской науки.
 
-- `GET /api/users` — список пользователей.
-- `GET /api/users/me` — профиль текущего пользователя по access token. Возвращает также его `participations`.
-- `GET /api/users/:id` — профиль пользователя по `id`.
-- `GET /api/users/:id/projects` — проекты конкретного пользователя.
-- `POST /api/users` — создание пользователя. Если роль не передана, используется `user`.
-- `PUT|PATCH /api/users/me` — частичное или полное обновление своего профиля без изменения `email`.
-- `PUT|PATCH /api/users/:id` — обновление пользователя по `id` только для `admin`.
-- `DELETE /api/users/:id` — удаление пользователя только для `admin`.
+## Структура
 
-```typescript
-export class CreateUserDto {
-  email: string;
-  password: string; // >= 6 символов
-  first_name?: string;
-  last_name?: string;
-  phone?: string;
-  role?: 'user' | 'admin';
-  description?: string;
-}
+```text
+backend/
+├── docker-compose.yml
+├── nginx.conf
+├── gateway/
+├── user-service/
+├── project-service/
+└── observation-service/
+```
 
-export class UpdateUserDto {
-  first_name?: string;
-  last_name?: string;
-  phone?: string;
-  description?: string;
-}
+## Сервисы
 
-export class UserResponseDto {
-  id: string;
-  email: string;
-  first_name: string;
-  last_name: string;
-  phone: string;
-  role: 'user' | 'admin';
-  description: string;
-  participations?: ParticipationResponseDto[];
+- `gateway` (`:8080`) — единая точка входа, проксирование `/api/*`, проверка сессии в Redis.
+- `user-service` (`:8081`) — регистрация, логин, профиль, participations.
+- `project-service` (`:8082`) — проекты и миссии.
+- `observation-service` (`:8083`) — observations, comments, загрузка файлов в MinIO.
+
+## Инфраструктура
+
+`docker-compose.yml` поднимает:
+
+- `users-db` — PostgreSQL для `user-service`
+- `projects-db` — PostgreSQL для `project-service`
+- `observations-db` — PostgreSQL для `observation-service`
+- `redis` — общие сессии и pub/sub
+- `minio` — хранение файлов observations
+- `gateway`, `user-service`, `project-service`, `observation-service`
+
+## Конфигурация
+
+У каждого сервиса есть свой `.env.example`:
+
+- [gateway/.env.example](gateway/.env.example)
+- [user-service/.env.example](user-service/.env.example)
+- [project-service/.env.example](project-service/.env.example)
+- [observation-service/.env.example](observation-service/.env.example)
+
+Ключевые переменные:
+
+- `DATABASE_URL` — своя БД у каждого сервиса
+- `REDIS_URL` — общий Redis
+- `JWT_SECRET` — один и тот же секрет у всех сервисов и gateway
+- `CORS_ALLOWED_ORIGINS` — список разрешённых origin для gateway через запятую
+- `PROJECT_SERVICE_URL` — нужен `user-service` для получения проектов пользователя
+- `PROJECT_SERVICE_URL` — также нужен `observation-service` для проверки project/mission-контекста и модерации учёным
+- `MINIO_*` — нужны `observation-service` для хранения файлов
+
+## Запуск
+
+Локальная сборка workspace:
+
+```bash
+cargo check --workspace
+```
+
+Запуск всей инфраструктуры:
+
+```bash
+docker compose up --build
+```
+
+После старта доступны:
+
+- `GET http://localhost:8080/health`
+- `GET http://localhost:8081/health`
+- `GET http://localhost:8082/health`
+- `GET http://localhost:8083/health`
+- `MinIO console: http://localhost:9001`
+
+## Аутентификация
+
+- `POST /api/users` — регистрация
+- `POST /api/auth/login` — логин, выдача JWT
+- `POST /api/auth/logout` — удаление сессии в Redis
+- все непубличные запросы идут с `Authorization: Bearer <token>`
+- публичная регистрация поддерживает только роли `volunteer` и `scientist`
+- `admin` — системная роль, не создаётся через публичную регистрацию
+
+Gateway проверяет наличие `session:{token}` в Redis, а downstream-сервисы дополнительно валидируют тот же токен напрямую.
+
+## Основные маршруты
+
+### user-service
+
+- `POST /users`
+- `POST /auth/login`
+- `POST /auth/logout`
+- `GET /users/me`
+- `PUT /users/me`
+- `PATCH /users/me`
+- `GET /users/:id`
+- `GET /users/:id/projects`
+- `GET /participations/:project_id`
+- `POST /participations/:project_id`
+- `DELETE /participations/:project_id/:user_id`
+
+### project-service
+
+- `GET /projects`
+- `GET /projects/by_tags` — фильтрация проектов по одному или нескольким тегам
+- `GET /projects/:id`
+- `POST /projects` — только `scientist` или `admin`
+- `PUT /projects/:id` — владелец-`scientist` или `admin`
+- `PATCH /projects/:id` — владелец-`scientist` или `admin`
+- `DELETE /projects/:id` — владелец-`scientist` или `admin`
+- `GET /projects/:id/missions`
+- `GET /projects/:id/missions/:mission_id`
+- `POST /projects/:id/missions` — владелец-`scientist` или `admin`
+- `PUT /projects/:id/missions/:mission_id` — владелец-`scientist` или `admin`
+- `PATCH /projects/:id/missions/:mission_id` — владелец-`scientist` или `admin`
+- `DELETE /projects/:id/missions/:mission_id` — владелец-`scientist` или `admin`
+- `GET /internal/users/:user_id/projects`
+
+Project содержит:
+
+- `title`
+- `description`
+- `status`
+- `tags`
+
+Во внешнем API `tags` передаются и возвращаются как массив строк, но в PostgreSQL они хранятся в отдельной таблице `tags` с полями `project_id` и `name`.
+
+### observation-service
+
+- `GET /projects/:project_id/missions/:mission_id/observations`
+- `GET /projects/:project_id/missions/:mission_id/observations/:obs_id`
+- `POST /projects/:project_id/missions/:mission_id/observations`
+- `PUT /projects/:project_id/missions/:mission_id/observations/:obs_id`
+- `PATCH /projects/:project_id/missions/:mission_id/observations/:obs_id`
+- `DELETE /projects/:project_id/missions/:mission_id/observations/:obs_id`
+- `GET /projects/:project_id/missions/:mission_id/observations/:obs_id/comments`
+- `POST /projects/:project_id/missions/:mission_id/observations/:obs_id/comments`
+- `PUT /projects/:project_id/missions/:mission_id/observations/:obs_id/comments/:comment_id`
+- `PATCH /projects/:project_id/missions/:mission_id/observations/:obs_id/comments/:comment_id`
+- `DELETE /projects/:project_id/missions/:mission_id/observations/:obs_id/comments/:comment_id`
+- `GET /projects/:project_id/missions/:mission_id/observations/:obs_id/files`
+- `POST /projects/:project_id/missions/:mission_id/observations/:obs_id/files`
+
+Observation содержит:
+
+- `title`
+- `description`
+- `place`
+- `status`
+- файлы и комментарии
+
+`POST /projects/:project_id/missions/:mission_id/observations` поддерживает два формата:
+
+- `application/json` — создание отчёта без файла:
+
+```json
+{
+  "title": "Наблюдение в парке",
+  "description": "Описание результата",
+  "place": "Москва, парк Сокольники"
 }
 ```
 
-## Проекты (`/api/projects`)
+- `multipart/form-data` — создание отчёта и загрузка файла одним запросом:
 
-- `GET /api/projects` — список проектов.
-- `GET /api/projects/:id` — проект по `id`.
-- `GET /api/projects/by_tags` — проекты по набору тегов. Ожидает массив `tags`.
-- `POST /api/projects` — создание проекта.
-- `PUT|PATCH /api/projects/:id` — частичное или полное обновление проекта. Требуется токен владельца проекта или `admin`.
-- `DELETE /api/projects/:id` — удаление проекта. Требуется токен владельца проекта или `admin`.
-
-```typescript
-export class CreateProjectDto {
-  title: string;
-  description: string;
-  status: string;
-  tags?: string[];
-}
-
-export class UpdateProjectDto {
-  title?: string;
-  description?: string;
-  status?: string;
-  tags?: string[];
-}
-
-export class ProjectResponseDto {
-  id: string;
-  user_id: string;
-  title: string;
-  description: string;
-  status: string;
-  tags: string[];
-}
+```text
+title=Наблюдение в парке
+description=Описание результата
+place=Москва, парк Сокольники
+file=<binary>
+file_title=photo.jpg
 ```
 
-### Missions (`/api/projects/:project_id/missions`)
+Поле `file_title` необязательное: если его нет, сервис использует имя файла из multipart-запроса. Отдельный `POST /projects/:project_id/missions/:mission_id/observations/:obs_id/files` остаётся доступен для добавления файла к уже созданному отчёту.
 
-- `GET /api/projects/:project_id/missions` — список миссий проекта.
-- `GET /api/projects/:project_id/missions/:mission_id` — одна миссия проекта.
-- `POST /api/projects/:project_id/missions` — создание миссии.
-- `PUT|PATCH /api/projects/:project_id/missions/:mission_id` — частичное или полное обновление миссии. Требуется токен владельца проекта или `admin`.
-- `DELETE /api/projects/:project_id/missions/:mission_id` — удаление миссии. Требуется токен владельца проекта или `admin`.
+Файлы не хранятся в PostgreSQL как бинарные данные. `observation-service` загружает файл в MinIO bucket `observations`, а в таблицу `observation_files` сохраняет метаданные: `title`, `file_type`, `url`, `object_key`. В ответах API для файлов возвращается `download_url` — временная presigned-ссылка для отображения или скачивания файла на фронтенде.
 
-```typescript
-export class CreateMissionDto {
-  title: string;
-  description: string;
-  requirements: string;
-  status: string;
-}
+## Технические детали
 
-export class UpdateMissionDto {
-  title?: string;
-  description?: string;
-  requirements?: string;
-  status?: string;
-}
+- миграции запускаются автоматически при старте каждого сервиса через `sqlx::migrate!`
+- `user-service` публикует `user.created` в Redis pub/sub
+- `project-service` публикует `project.created` и `mission.created`
+- `project-service` хранит теги проектов в отдельной таблице `tags`, связанной с `projects` по `project_id`
+- `observation-service` создаёт bucket в MinIO при старте, если его ещё нет
+- gateway, `observation-service` и nginx принимают загрузки файлов до `20 MB`
 
-export class MissionResponseDto {
-  id: string;
-  project_id: string;
-  title: string;
-  description: string;
-  requirements: string;
-  status: string;
-}
+## Проверка
+
+Сейчас проверено:
+
+```bash
+cargo check --workspace
+docker compose up -d --build
 ```
 
-### Observations (`/api/projects/:project_id/missions/:mission_id/observations`)
+Также вручную проверены:
 
-- `GET /api/projects/:project_id/missions/:mission_id/observations` — список наблюдений миссии.
-- `GET /api/projects/:project_id/missions/:mission_id/observations/:obs_id` — одно наблюдение.
-- `POST /api/projects/:project_id/missions/:mission_id/observations` — создание наблюдения.
-- `PUT|PATCH /api/projects/:project_id/missions/:mission_id/observations/:obs_id` — частичное или полное обновление наблюдения. Требуется токен автора observation, владельца проекта или `admin`.
-- `DELETE /api/projects/:project_id/missions/:mission_id/observations/:obs_id` — удаление наблюдения. Требуется токен автора observation, владельца проекта или `admin`.
-
-```typescript
-export class CreateObservationDto {
-  title: string;
-  description: string;
-}
-
-export class UpdateObservationDto {
-  title?: string;
-  description?: string;
-  status?: string;
-}
-
-export class ObservationFileDto {
-  id: string;
-  title: string;
-  type: string;
-  url: string;
-}
-
-export class ObservationCommentResponseDto {
-  id: string;
-  observation_id: string;
-  user_id: string;
-  parent_comment_id: string | null; // null для корневого комментария
-  comment: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export class ObservationResponseDto {
-  id: string;
-  user_id: string;
-  mission_id: string;
-  title: string;
-  description: string;
-  status: string;
-  files: ObservationFileDto[];
-  comments?: ObservationCommentResponseDto[];
-}
-```
-
-### Observation Comments (`/api/projects/:project_id/missions/:mission_id/observations/:obs_id/comments`)
-
-- `GET /api/projects/:project_id/missions/:mission_id/observations/:obs_id/comments` — все комментарии observation.
-- `GET /api/projects/:project_id/missions/:mission_id/observations/:obs_id/comments/:comment_id` — один комментарий.
-- `POST /api/projects/:project_id/missions/:mission_id/observations/:obs_id/comments` — создать комментарий к observation.
-- `PUT|PATCH /api/projects/:project_id/missions/:mission_id/observations/:obs_id/comments/:comment_id` — обновить комментарий. Обычно разрешено автору комментария, владельцу проекта или `admin`.
-- `DELETE /api/projects/:project_id/missions/:mission_id/observations/:obs_id/comments/:comment_id` — удалить комментарий. Обычно разрешено автору комментария, владельцу проекта или `admin`.
-
-```typescript
-export class CreateObservationCommentDto {
-  comment: string;
-  parent_comment_id?: string | null; // null или отсутствие поля = корневой комментарий
-}
-
-export class UpdateObservationCommentDto {
-  comment?: string;
-}
-
-export class ObservationCommentResponseDto {
-  id: string;
-  observation_id: string;
-  user_id: string;
-  parent_comment_id: string | null;
-  comment: string;
-  created_at: string;
-  updated_at: string;
-}
-```
-
-## Participations (`/api/participations`)
-
-- `GET /api/participations/:project_id` — участники проекта.
-- `POST /api/participations/:project_id` — вступить в проект. Требуется токен.
-- `DELETE /api/participations/:project_id/:user_id` — прекратить участие. Требуется токен пользователя или `admin`.
-
-```typescript
-export class ParticipationResponseDto {
-  id: string;
-  user_id: string;
-  project_id: string;
-  user_name?: string;
-}
-```
+- `GET /health` на `gateway`, `user-service`, `project-service`, `observation-service`
+- CORS/preflight через `gateway` для локальных origin `http://localhost:3000`, `http://127.0.0.1:3000`, `http://[::]:3000`
