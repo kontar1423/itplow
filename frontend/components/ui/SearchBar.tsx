@@ -15,6 +15,11 @@ export default function SearchBar({
   initialValue = '' 
 }: SearchBarProps) {
   const [query, setQuery] = useState(initialValue);
+
+  const handleChange = (value: string) => {
+    setQuery(value);
+    onSearch?.(value);
+  };
   
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -22,12 +27,12 @@ export default function SearchBar({
   };
   
   return (
-    <form onSubmit={handleSubmit} className="flex w-full gap-2">
+    <form onSubmit={handleSubmit} className="flex w-full flex-col gap-2 sm:flex-row">
       <div className="relative flex-1">
         <input
           type="text"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => handleChange(e.target.value)}
           placeholder={placeholder}
           className="w-full px-4 py-2.5 pl-11 rounded-lg border border-border bg-white text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
         />
@@ -46,7 +51,7 @@ export default function SearchBar({
           />
         </svg>
       </div>
-      <Button type="submit" variant="primary">
+      <Button type="submit" variant="primary" className="w-full sm:w-auto">
         Найти
       </Button>
     </form>

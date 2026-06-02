@@ -71,7 +71,7 @@ function RegisterForm() {
             </CardDescription>
           </CardHeader>
           
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} autoComplete="on">
             <CardContent className="space-y-4">
               {error && (
                 <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm">
@@ -119,6 +119,7 @@ function RegisterForm() {
                 label="Имя"
                 name="firstName"
                 placeholder="Ваше имя"
+                autoComplete="given-name"
                 required
               />
               
@@ -126,6 +127,7 @@ function RegisterForm() {
                 label="Фамилия"
                 name="lastName"
                 placeholder="Ваша фамилия"
+                autoComplete="family-name"
                 required
               />
               
@@ -134,6 +136,8 @@ function RegisterForm() {
                 name="email"
                 type="email"
                 placeholder="example@mail.ru"
+                autoComplete="email"
+                inputMode="email"
                 required
               />
               
@@ -143,6 +147,7 @@ function RegisterForm() {
                 type="password"
                 placeholder="Придумайте пароль"
                 helperText="Минимум 6 символов"
+                autoComplete="new-password"
                 required
               />
               
@@ -151,6 +156,7 @@ function RegisterForm() {
                 name="confirmPassword"
                 type="password"
                 placeholder="Повторите пароль"
+                autoComplete="new-password"
                 required
               />
             </CardContent>

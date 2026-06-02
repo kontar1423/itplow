@@ -55,7 +55,7 @@ export default function LoginPage() {
             </CardDescription>
           </CardHeader>
           
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} autoComplete="on">
             <CardContent className="space-y-4">
               {error && (
                 <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm">
@@ -68,6 +68,8 @@ export default function LoginPage() {
                 name="email"
                 type="email"
                 placeholder="example@mail.ru"
+                autoComplete="username"
+                inputMode="email"
                 required
               />
               
@@ -76,6 +78,7 @@ export default function LoginPage() {
                 name="password"
                 type="password"
                 placeholder="Введите пароль"
+                autoComplete="current-password"
                 required
               />
               

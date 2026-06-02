@@ -8,6 +8,19 @@ import Badge from '@/components/ui/Badge';
 import SearchBar from '@/components/ui/SearchBar';
 import { getCurrentUser, getMissions, getParticipations, getProjects, ProjectResponseDto } from '@/lib/api/client';
 
+const POPULAR_TAGS = [
+  'Экология',
+  'Биология',
+  'Орнитология',
+  'Климат',
+  'Астрономия',
+  'Метеорология',
+  'География',
+  'Ботаника',
+  'Зоология',
+  'Гидрология',
+];
+
 function canCreateProject(role?: string): boolean {
   return role === 'admin' || role === 'scientist';
 }
@@ -50,6 +63,7 @@ export default function ProjectsPage() {
   const [showCreateProject, setShowCreateProject] = useState(false);
   const [participantProjectIds, setParticipantProjectIds] = useState<Set<string>>(new Set());
   const [isVolunteerViewer, setIsVolunteerViewer] = useState(false);
+  const [activeTag, setActiveTag] = useState('');
 
   useEffect(() => {
     const loadProjects = async () => {
@@ -115,17 +129,17 @@ export default function ProjectsPage() {
 
   const filteredProjects = useMemo(() => {
     const query = search.trim().toLowerCase();
-    if (!query) {
-      return projects;
-    }
-
     return projects.filter((project) => {
       const inTitle = project.title.toLowerCase().includes(query);
       const inDescription = project.description.toLowerCase().includes(query);
       const inTags = project.tags.some((tag) => tag.toLowerCase().includes(query));
-      return inTitle || inDescription || inTags;
+      const matchesSearch = !query || inTitle || inDescription || inTags;
+      const matchesActiveTag =
+        !activeTag || project.tags.some((tag) => tag.toLowerCase().includes(activeTag.toLowerCase()));
+
+      return matchesSearch && matchesActiveTag;
     });
-  }, [projects, search]);
+  }, [activeTag, projects, search]);
 
   return (
     <div className="min-h-screen">
@@ -139,6 +153,25 @@ export default function ProjectsPage() {
               onSearch={setSearch}
               initialValue={search}
             />
+            <div className="mt-6 flex flex-wrap justify-center gap-2">
+              {POPULAR_TAGS.map((tag) => {
+                const isActive = activeTag === tag;
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => setActiveTag((current) => (current === tag ? '' : tag))}
+                    className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
+                      isActive
+                        ? 'border-primary bg-primary text-white'
+                        : 'border-primary/25 bg-white text-primary hover:border-primary hover:bg-primary/5'
+                    }`}
+                  >
+                    {tag}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
@@ -146,7 +179,10 @@ export default function ProjectsPage() {
       <div className="py-12">
         <div className="container-custom">
           <div className="flex justify-between items-center mb-8 gap-4">
-            <h2 className="text-xl font-semibold text-foreground">Найдено проектов: {filteredProjects.length}</h2>
+            <div>
+              <h2 className="text-xl font-semibold text-foreground">Найдено проектов: {filteredProjects.length}</h2>
+              {activeTag && <p className="text-sm text-muted-foreground mt-1">Фильтр по направлению: {activeTag}</p>}
+            </div>
             {showCreateProject && (
               <Link href="/projects/create">
                 <Button variant="outline">Создать проект</Button>
@@ -167,7 +203,15 @@ export default function ProjectsPage() {
             <div className="text-center py-16">
               <h3 className="text-xl font-semibold text-foreground mb-2">Проекты не найдены</h3>
               <p className="text-muted-foreground mb-6">Измените запрос или очистите поиск.</p>
-              <Button variant="outline" onClick={() => setSearch('')}>Очистить поиск</Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSearch('');
+                  setActiveTag('');
+                }}
+              >
+                Очистить поиск
+              </Button>
             </div>
           )}
 

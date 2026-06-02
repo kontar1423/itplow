@@ -85,7 +85,26 @@ export default function VolunteerDashboardPage() {
           </div>
         </aside>
 
-        <main className="flex-1 p-8">
+        <main className="flex-1 p-4 md:p-8">
+          <div className="mb-6 lg:hidden">
+            <div className="flex items-center gap-3 rounded-2xl border border-border bg-white p-4 shadow-sm">
+              <Avatar fallback={userName} size="md" />
+              <div className="min-w-0">
+                <div className="truncate font-medium text-foreground">{userName}</div>
+                <div className="text-sm text-muted-foreground">Волонтёр</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mb-6 overflow-x-auto lg:hidden">
+            <div className="flex min-w-max gap-2">
+              <button type="button" onClick={() => setActiveTab('my-projects')} className={`rounded-full px-4 py-2 text-sm font-medium ${activeTab === 'my-projects' ? 'bg-primary text-white' : 'bg-white text-foreground border border-border'}`}>Мои проекты</button>
+              <button type="button" onClick={() => setActiveTab('my-reports')} className={`rounded-full px-4 py-2 text-sm font-medium ${activeTab === 'my-reports' ? 'bg-primary text-white' : 'bg-white text-foreground border border-border'}`}>Мои отчёты</button>
+              <button type="button" onClick={() => setActiveTab('profile')} className={`rounded-full px-4 py-2 text-sm font-medium ${activeTab === 'profile' ? 'bg-primary text-white' : 'bg-white text-foreground border border-border'}`}>Профиль</button>
+              <button type="button" onClick={() => setActiveTab('settings')} className={`rounded-full px-4 py-2 text-sm font-medium ${activeTab === 'settings' ? 'bg-primary text-white' : 'bg-white text-foreground border border-border'}`}>Настройки</button>
+            </div>
+          </div>
+
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-foreground mb-2">
               {activeTab === 'my-projects' && 'Мои проекты'}

@@ -86,7 +86,26 @@ export default function ScientistDashboardPage() {
           </div>
         </aside>
 
-        <main className="flex-1 p-8">
+        <main className="flex-1 p-4 md:p-8">
+          <div className="mb-6 lg:hidden">
+            <div className="flex items-center gap-3 rounded-2xl border border-border bg-white p-4 shadow-sm">
+              <Avatar fallback={userName} size="md" />
+              <div className="min-w-0">
+                <div className="truncate font-medium text-foreground">{userName}</div>
+                <div className="text-sm text-muted-foreground">Учёный</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mb-6 overflow-x-auto lg:hidden">
+            <div className="flex min-w-max gap-2">
+              <button type="button" onClick={() => setActiveTab('projects')} className={`rounded-full px-4 py-2 text-sm font-medium ${activeTab === 'projects' ? 'bg-primary text-white' : 'bg-white text-foreground border border-border'}`}>Мои проекты</button>
+              <button type="button" onClick={() => setActiveTab('reports')} className={`rounded-full px-4 py-2 text-sm font-medium ${activeTab === 'reports' ? 'bg-primary text-white' : 'bg-white text-foreground border border-border'}`}>Отчёты</button>
+              <button type="button" onClick={() => setActiveTab('profile')} className={`rounded-full px-4 py-2 text-sm font-medium ${activeTab === 'profile' ? 'bg-primary text-white' : 'bg-white text-foreground border border-border'}`}>Профиль</button>
+              <button type="button" onClick={() => setActiveTab('settings')} className={`rounded-full px-4 py-2 text-sm font-medium ${activeTab === 'settings' ? 'bg-primary text-white' : 'bg-white text-foreground border border-border'}`}>Настройки</button>
+            </div>
+          </div>
+
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-foreground mb-2">
               {activeTab === 'projects' && 'Мои проекты'}
@@ -100,7 +119,7 @@ export default function ScientistDashboardPage() {
             <div className="space-y-4">
               <div className="flex justify-end">
                 <Link href="/projects/create">
-                  <Button>
+                  <Button className="w-full sm:w-auto">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
                     Создать проект
                   </Button>

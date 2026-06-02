@@ -291,9 +291,11 @@ export default function TaskPage() {
                   Место наблюдения {requirementsMeta.requirePlace ? '' : '(необязательно)'}
                 </label>
                 <input
-                  className="w-full px-4 py-3 rounded-lg border border-input"
+                  className="w-full px-4 py-3 rounded-lg border border-input bg-white text-foreground"
                   value={formData.place}
                   onChange={(e) => setFormData((prev) => ({ ...prev, place: e.target.value }))}
+                  placeholder="Например: Москва, Измайловский парк"
+                  autoComplete="street-address"
                   required={requirementsMeta.requirePlace}
                 />
               </div>
