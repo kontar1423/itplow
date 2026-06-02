@@ -70,7 +70,6 @@ struct MultipartFile {
 
 pub async fn list_observations(
     state: web::Data<AppState>,
-    _auth: AuthenticatedUser,
     path: web::Path<(Uuid, Uuid)>,
 ) -> Result<HttpResponse, AppError> {
     let (project_id, mission_id) = path.into_inner();
@@ -93,7 +92,6 @@ pub async fn list_observations(
 
 pub async fn get_observation(
     state: web::Data<AppState>,
-    _auth: AuthenticatedUser,
     path: web::Path<(Uuid, Uuid, Uuid)>,
 ) -> Result<HttpResponse, AppError> {
     let (project_id, mission_id, observation_id) = path.into_inner();
