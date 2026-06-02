@@ -8,9 +8,6 @@ function normalizeTarget(input: string): { upstream: URL; connectHost: string; c
   const upstream = new URL(input);
   const isHttps = upstream.protocol === 'https:';
 
-  // В docker-compose MinIO подписывает URL с host=minio:9000.
-  // Браузер этот host не резолвит, поэтому подключаемся к localhost:9000,
-  // но сохраняем Host header из signed URL.
   if (upstream.hostname === 'minio') {
     return {
       upstream,
@@ -57,7 +54,6 @@ export async function GET(request: NextRequest): Promise<Response> {
         method: 'GET',
         path: `${upstream.pathname}${upstream.search}`,
         headers: {
-          // Для presigned URL важно сохранить оригинальный host.
           Host: upstream.host,
         },
       },

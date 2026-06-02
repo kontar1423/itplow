@@ -20,8 +20,8 @@ const Badge = forwardRef<HTMLSpanElement, BadgeProps>(
     };
     
     const sizes = {
-      sm: 'px-2 py-0.5 text-xs',
-      md: 'px-2.5 py-1 text-sm',
+      sm: 'px-2.5 py-1 text-xs sm:px-2 sm:py-0.5',
+      md: 'px-3.5 py-1.5 text-sm sm:px-2.5 sm:py-1',
     };
 
     return (

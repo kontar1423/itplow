@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://138.16.177.97/api';
 
 function getAuthToken(): string | null {
   if (typeof window !== 'undefined') {
@@ -16,6 +16,23 @@ function getHeaders(): HeadersInit {
     headers['Authorization'] = `Bearer ${token}`;
   }
   return headers;
+}
+
+
+async function fetchWithPublicFallback(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+  const response = await fetch(input, init);
+
+  if (response.status !== 401 && response.status !== 403) {
+    return response;
+  }
+
+  const headers = new Headers(init.headers || {});
+  headers.delete('Authorization');
+
+  return fetch(input, {
+    ...init,
+    headers,
+  });
 }
 
 async function handleResponse<T>(response: Response): Promise<T> {
@@ -123,8 +140,15 @@ export interface ProjectResponseDto {
   reports_count?: number;
 }
 
-export async function getProjects(): Promise<ProjectResponseDto[]> {
+export async function getPublicProjects(): Promise<ProjectResponseDto[]> {
   const response = await fetch(`${API_BASE_URL}/projects`, {
+    method: 'GET',
+  });
+  return handleResponse(response);
+}
+
+export async function getProjects(): Promise<ProjectResponseDto[]> {
+  const response = await fetchWithPublicFallback(`${API_BASE_URL}/projects`, {
     method: 'GET',
     headers: getHeaders(),
   });
@@ -132,7 +156,7 @@ export async function getProjects(): Promise<ProjectResponseDto[]> {
 }
 
 export async function getProjectById(id: string): Promise<ProjectResponseDto> {
-  const response = await fetch(`${API_BASE_URL}/projects/${id}`, {
+  const response = await fetchWithPublicFallback(`${API_BASE_URL}/projects/${id}`, {
     method: 'GET',
     headers: getHeaders(),
   });
@@ -420,34 +444,27 @@ export async function leaveProject(projectId: string, userId: string): Promise<v
 }
 
 export async function getUserProjects(): Promise<ProjectResponseDto[]> {
-  // Получаем текущего пользователя с его участиями
   const user = await getCurrentUser();
 
-  // Если нет участий, возвращаем пустой массив
   if (!user.participations || user.participations.length === 0) {
     return [];
   }
 
-  // Получаем все проекты
   const allProjects = await getProjects();
 
-  // Фильтруем проекты, в которых участвует пользователь
   const userProjectIds = user.participations.map(p => p.project_id);
   return allProjects.filter(project => userProjectIds.includes(project.id));
 }
 
 export async function getUserCreatedProjects(): Promise<ProjectResponseDto[]> {
-  // Получаем текущего пользователя
   const user = await getCurrentUser();
   
-  // Получаем проекты, созданные этим пользователем
   const response = await fetch(`${API_BASE_URL}/users/${user.id}/projects`, {
     method: 'GET',
     headers: getHeaders(),
   });
   const projects = await handleResponse<ProjectResponseDto[]>(response);
   
-  // Для каждого проекта получаем количество миссий
   const projectsWithMissions = await Promise.all(
     projects.map(async (project) => {
       try {
@@ -514,14 +531,12 @@ export async function getUserObservations(): Promise<UserObservationDto[]> {
   const allProjects = await getProjects();
   const userObservations: UserObservationDto[] = [];
   
-  // Для каждого проекта получаем миссии и наблюдения
   for (const project of allProjects) {
     try {
       const missions = await getMissions(project.id);
       for (const mission of missions) {
         try {
           const observations = await getObservations(project.id, mission.id);
-          // Фильтруем наблюдения текущего пользователя
           const userMissionObs = observations.filter(obs => obs.user_id === user.id);
           for (const obs of userMissionObs) {
             userObservations.push({
@@ -539,17 +554,14 @@ export async function getUserObservations(): Promise<UserObservationDto[]> {
             });
           }
         } catch {
-          // Если не удалось получить наблюдения для миссии, пропускаем
           continue;
         }
       }
     } catch {
-      // Если не удалось получить миссии для проекта, пропускаем
       continue;
     }
   }
   
-  // Сортируем по дате создания (новые first)
   return userObservations.sort((a, b) => 
     new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   );

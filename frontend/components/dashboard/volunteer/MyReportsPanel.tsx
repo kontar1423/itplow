@@ -46,7 +46,7 @@ export default function MyReportsPanel() {
       {reports.map((report) => (
         <Card key={report.id} variant="outlined" className="hover:shadow-md transition-shadow">
           <CardHeader className="pb-3">
-            <div className="flex justify-between items-start">
+            <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-start">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <CardTitle className="text-base">{report.title}</CardTitle>
@@ -55,7 +55,7 @@ export default function MyReportsPanel() {
                   {report.projectTitle} / {report.missionTitle}
                 </CardDescription>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 {report.status === 'pending' && (
                   <Badge variant="warning">На проверке</Badge>
                 )}
@@ -69,7 +69,7 @@ export default function MyReportsPanel() {
             </div>
           </CardHeader>
           <CardContent className="pb-3">
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
               <span className="flex items-center gap-1">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                 {report.files.length} фото
@@ -84,7 +84,7 @@ export default function MyReportsPanel() {
             )}
           </CardContent>
           <CardFooter>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" className="w-full sm:w-auto">
               Подробнее
             </Button>
           </CardFooter>

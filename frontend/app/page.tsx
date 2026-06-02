@@ -5,6 +5,7 @@ import {
   getCurrentUser,
   getMissions,
   getParticipations,
+  getPublicProjects,
   getProjects,
   type ProjectResponseDto,
   type UserResponseDto
@@ -39,7 +40,8 @@ export default function Home() {
     const loadPopularProjects = async () => {
       try {
         setIsProjectsLoading(true);
-        const projects = await getProjects();
+        const hasToken = typeof window !== 'undefined' && !!localStorage.getItem('auth_token');
+        const projects = hasToken ? await getProjects() : await getPublicProjects();
 
         const withStats = await Promise.all(
           projects.map(async (project) => {
@@ -78,7 +80,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen">
-      {/* Hero Section */}
       <div className="bg-[#f0fdf4] py-16 lg:py-24">
         <div className="container-custom">
           <div className="max-w-4xl mx-auto text-center">
@@ -98,7 +99,7 @@ export default function Home() {
               </Link>
               <Link href="/about">
                 <Button variant="ghost" size="lg" className="w-full sm:w-auto">
-                  Узнать больше →
+                  Узнать больше
                 </Button>
               </Link>
             </div>
@@ -106,7 +107,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Популярные проекты */}
       <div className="py-12">
         <div className="container-custom">
           <div className="flex justify-between items-center mb-8">
@@ -119,7 +119,7 @@ export default function Home() {
               </p>
             </div>
             <Link href="/projects">
-              <Button variant="ghost">Все проекты →</Button>
+              <Button variant="ghost">Все проекты</Button>
             </Link>
           </div>
           
@@ -161,7 +161,7 @@ export default function Home() {
                         {project.participantsCount} участников
                       </span>
                       <span className="text-primary text-sm font-medium group-hover:underline">
-                        Подробнее →
+                        Подробнее
                       </span>
                     </div>
                   </CardFooter>
@@ -171,8 +171,6 @@ export default function Home() {
           </div>
         </div>
       </div>
-
-      {/* CTA - only show if user is not logged in */}
       <CTA isVisible={!currentUser} />
 
       <Footer />

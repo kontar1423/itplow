@@ -120,7 +120,7 @@ export default function MyProjectsPanel() {
       {projects.map((project) => (
         <Card key={project.id} variant="outlined" className="hover:shadow-md transition-shadow">
           <CardHeader className="pb-3">
-            <div className="flex justify-between items-start">
+            <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-start">
               <div className="flex-1">
                 <CardTitle className="text-lg">{project.title}</CardTitle>
                 <CardDescription className="mt-1">
@@ -143,8 +143,8 @@ export default function MyProjectsPanel() {
             </div>
           </CardContent>
           <CardFooter className="flex justify-end">
-            <Link href={`/projects/${project.id}`}>
-              <Button variant="outline" size="sm">
+            <Link href={`/projects/${project.id}`} className="w-full sm:w-auto">
+              <Button variant="outline" size="sm" className="w-full sm:w-auto">
                 Перейти к проекту
               </Button>
             </Link>

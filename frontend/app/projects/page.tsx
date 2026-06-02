@@ -6,7 +6,7 @@ import Button from '@/components/ui/Button';
 import Card, { CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import SearchBar from '@/components/ui/SearchBar';
-import { getCurrentUser, getMissions, getParticipations, getProjects, ProjectResponseDto } from '@/lib/api/client';
+import { getCurrentUser, getMissions, getParticipations, getProjects, getPublicProjects, ProjectResponseDto } from '@/lib/api/client';
 
 const POPULAR_TAGS = [
   'Экология',
@@ -71,9 +71,10 @@ export default function ProjectsPage() {
         setIsLoading(true);
         setError('');
 
+        const hasToken = typeof window !== 'undefined' && !!localStorage.getItem('auth_token');
         const [projectsData, currentUser] = await Promise.all([
-          getProjects(),
-          getCurrentUser().catch(() => null),
+          hasToken ? getProjects() : getPublicProjects(),
+          hasToken ? getCurrentUser().catch(() => null) : Promise.resolve(null),
         ]);
 
         const localRole = typeof window !== 'undefined' ? localStorage.getItem('user_role') : null;
@@ -244,7 +245,7 @@ export default function ProjectsPage() {
                     </CardContent>
                     <CardFooter className="justify-between text-sm text-muted-foreground">
                       <span>{formatParticipantsCount(project.participants_count ?? 0)}</span>
-                      <span className="text-primary font-medium group-hover:underline">Подробнее →</span>
+                      <span className="text-primary font-medium group-hover:underline">Подробнее</span>
                     </CardFooter>
                   </Card>
                 </Link>

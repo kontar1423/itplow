@@ -94,7 +94,7 @@ export default function ProfilePanel({ className }: ProfilePanelProps) {
       <CardHeader>
         <CardTitle>Редактирование профиля</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 px-4 sm:px-6">
         <div>
           <label className="text-sm font-medium text-foreground mb-1.5 block">Имя</label>
           <input
@@ -144,8 +144,8 @@ export default function ProfilePanel({ className }: ProfilePanelProps) {
           </div>
         </div>
       </CardContent>
-      <CardFooter className="flex flex-col items-start gap-3">
-        <Button onClick={handleSave} disabled={isSaving}>
+      <CardFooter className="flex flex-col items-start gap-3 px-4 sm:px-6">
+        <Button onClick={handleSave} disabled={isSaving} className="w-full sm:w-auto">
           {isSaving ? 'Сохранение...' : 'Сохранить изменения'}
         </Button>
         {message && (

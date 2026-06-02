@@ -1,34 +1,32 @@
 @import "tailwindcss";
 
 :root {
-  /* Основные цвета - зелено-синяя гамма */
-  --primary: #0d9488;        /* Teal 600 - основной зелёный */
-  --primary-hover: #0f766e;  /* Teal 700 */
-  --primary-light: #ccfbf1;  /* Teal 100 */
-  --primary-dark: #134e4a;   /* Teal 900 */
+  --primary: #0d9488;
+  --primary-hover: #0f766e;
+  --primary-light: #ccfbf1;
+  --primary-dark: #134e4a;
   
-  --secondary: #0ea5e9;      /* Sky 500 - синий акцент */
-  --secondary-hover: #0284c7; /* Sky 600 */
-  --secondary-light: #e0f2fe; /* Sky 100 */
+  --secondary: #0ea5e9;
+  --secondary-hover: #0284c7;
+  --secondary-light: #e0f2fe;
   
-  --accent: #22d3ee;         /* Cyan 400 - яркий акцент */
+  --accent: #22d3ee;
   
-  --success: #10b981;        /* Emerald 500 */
-  --warning: #f59e0b;        /* Amber 500 */
-  --error: #ef4444;         /* Red 500 */
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
   
-  /* Нейтральные цвета - лёгкий зеленоватый фон */
-  --background: #f0fdf4;     /* Green 50 */
-  --foreground: #0f172a;     /* Slate 900 */
-  --foreground-muted: #64748b; /* Slate 500 */
+  --background: #f0fdf4;
+  --foreground: #0f172a;
+  --foreground-muted: #64748b;
   
   --card: #ffffff;
   --card-foreground: #0f172a;
   
-  --border: #d1fae5;         /* Green 100 */
-  --border-hover: #a7f3d0;    /* Green 200 */
+  --border: #d1fae5;
+  --border-hover: #a7f3d0;
   
-  --muted: #ecfdf5;          /* Green 50 */
+  --muted: #ecfdf5;
   --muted-foreground: #64748b;
   
   --radius: 0.5rem;
@@ -81,7 +79,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Контейнер */
 .container-custom {
   width: 100%;
   max-width: 1280px;

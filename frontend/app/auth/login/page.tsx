@@ -34,7 +34,6 @@ export default function LoginPage() {
       
       setIsLoading(false);
       
-      // Перенаправление на соответствующий dashboard
       const targetRole = user.role === 'admin' ? 'scientist' : user.role;
       router.push(`/dashboard/${targetRole}`);
     } catch (err) {
