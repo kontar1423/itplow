@@ -180,6 +180,7 @@ fn is_public_route(method: &Method, path: &str) -> bool {
         || path == "/health"
         || (method == Method::GET && path == "/api/projects")
         || (method == Method::GET && path.starts_with("/api/projects/"))
+        || (method == Method::GET && path.starts_with("/api/participations/"))
 }
 
 fn resolve_target<'a>(config: &'a Config, path: &str) -> Result<&'a str, AppError> {
